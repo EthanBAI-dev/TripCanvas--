@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@theme {
+  --color-ink: #17343d;
+  --color-ink-muted: #647c85;
+  --color-sand-50: #f5f9fa;
+  --color-sand-100: #eaf2f4;
+  --color-sand-200: #d6e4e8;
+  --color-sand-300: #b9ced4;
+  --color-coral: #0f9d94;
+  --color-coral-dark: #0a756f;
+  --font-display: "DM Sans", "Noto Sans SC", sans-serif;
+  --font-sans: "DM Sans", "Noto Sans SC", sans-serif;
+  --shadow-panel: 0 8px 24px rgb(23 52 61 / 6%);
+  --shadow-canvas: 0 22px 56px rgb(25 72 82 / 20%);
+}
+
+.tripcanvas-map {
+  position: absolute;
+  inset: 0;
+}
+
+[data-exporting='true'] [data-export-ui],
+[data-exporting='true'] .maplibregl-control-container {
+  display: none !important;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-width: 320px;
+    min-height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: #f5f9fa;
+    font-family: var(--font-sans);
+  }
+
+  button,
+  textarea {
+    font: inherit;
+  }
+}
