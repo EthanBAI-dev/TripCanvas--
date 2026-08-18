@@ -48,39 +48,6 @@ function getRouteModes() {
   return project.places.slice(1).map((place) => place.arrivalMode ?? 'walking')
 }
 
-function createGoogleMapsRouteUrl() {
-  const origin = project.places[0]
-  const destination = project.places.at(-1)
-  if (!origin || !destination) return null
-
-  const url = new URL('https://www.google.com/maps/dir/')
-  url.searchParams.set('api', '1')
-  url.searchParams.set('origin', `${origin.lat},${origin.lng}`)
-  url.searchParams.set('destination', `${destination.lat},${destination.lng}`)
-  const modes = getRouteModes()
-  url.searchParams.set('travelmode', modes[0] ?? 'walking')
-  const waypoints = project.places.slice(1, -1)
-  if (waypoints.length) {
-    url.searchParams.set('waypoints', waypoints.map((place) => `${place.lat},${place.lng}`).join('|'))
-  }
-  return url.toString()
-}
-
-function createGoogleMapsFitUrl() {
-  if (!project.places.length) return null
-  const lats = project.places.map((place) => place.lat)
-  const lngs = project.places.map((place) => place.lng)
-  const minLat = Math.min(...lats)
-  const maxLat = Math.max(...lats)
-  const minLng = Math.min(...lngs)
-  const maxLng = Math.max(...lngs)
-  const centerLat = (minLat + maxLat) / 2
-  const centerLng = (minLng + maxLng) / 2
-  const span = Math.max(maxLat - minLat, (maxLng - minLng) * Math.cos(centerLat * Math.PI / 180), 0.001)
-  const zoom = Math.max(3, Math.min(17, Math.floor(Math.log2(180 / span)) - 1))
-  return `https://www.google.com/maps/@${centerLat},${centerLng},${zoom}z`
-}
-
 async function waitForTabComplete(tabId, timeoutMs = 12_000) {
   const current = await chrome.tabs.get(tabId).catch(() => null)
   if (current?.status === 'complete') return
@@ -100,14 +67,22 @@ async function waitForTabComplete(tabId, timeoutMs = 12_000) {
   })
 }
 
-async function openGoogleMapsRoute() {
-  const modes = new Set(getRouteModes())
-  const routeUrl = modes.size <= 1 ? createGoogleMapsRouteUrl() : createGoogleMapsFitUrl()
-  if (!routeUrl) return false
+async function fitGoogleMapsToPreview() {
   const mapTab = await getGoogleMapsTab()
   if (!mapTab?.id) return false
 
-  await chrome.tabs.update(mapTab.id, { url: routeUrl })
+  const response = await chrome.tabs.sendMessage(mapTab.id, {
+    type: 'TRIPCANVAS_CALCULATE_PREVIEW_CAMERA',
+    payload: {
+      canvasRatio: project.canvasRatio,
+      places: project.places.map(({ lat, lng }) => ({ lat, lng })),
+      geometry: project.routeGeometry,
+    },
+  }).catch(() => null)
+  if (!response?.camera) return false
+
+  const { lat, lng, zoom } = response.camera
+  await chrome.tabs.update(mapTab.id, { url: `https://www.google.com/maps/@${lat},${lng},${zoom}z` })
   await waitForTabComplete(mapTab.id)
   return true
 }
@@ -339,14 +314,14 @@ byId('update-route-preview').addEventListener('click', async () => {
   }
   saveProject()
   renderRouteSummary()
-  setStatus('路线已计算，正在让 Google Maps 打开多点导航并适配视野…')
-  const openedNativeRoute = await openGoogleMapsRoute()
+  setStatus('路线已计算，正在根据预览框自动缩放和平移地图…')
+  const fittedMap = await fitGoogleMapsToPreview()
   await syncPreview()
-  if (!openedNativeRoute) {
-    setStatus('路线已计算，但没有找到已打开的 Google Maps 标签页。', true)
+  if (!fittedMap) {
+    setStatus('路线已计算，但无法读取 Google Maps 预览框尺寸。', true)
     return
   }
-  setStatus(response.warning ? `路线已显示。${response.warning}` : 'Google Maps 多点路线和 TripCanvas 预览线均已显示。')
+  setStatus(response.warning ? `路线已适配画幅。${response.warning}` : '地图已自动缩放和平移，全部路径点已适配预览框。')
 })
 
 byId('toggle-preview').addEventListener('click', () => {
@@ -399,7 +374,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   const patch = message.patch
   if (typeof patch.title === 'string') project.title = patch.title.slice(0, 120)
   if (typeof patch.subtitle === 'string') project.subtitle = patch.subtitle.slice(0, 180)
+  const ratioChanged = ['3:4', '4:5', '9:16'].includes(patch.canvasRatio) && patch.canvasRatio !== project.canvasRatio
   if (['3:4', '4:5', '9:16'].includes(patch.canvasRatio)) project.canvasRatio = patch.canvasRatio
   saveProject()
   sendResponse({ ok: true })
+  if (ratioChanged && project.routeGeometry.length) {
+    window.setTimeout(() => {
+      void fitGoogleMapsToPreview().then(() => syncPreview())
+    }, 100)
+  }
 })

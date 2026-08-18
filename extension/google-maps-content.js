@@ -43,6 +43,64 @@ function toWorldPoint({ lat, lng }, zoom) {
   }
 }
 
+function toNormalizedMercator({ lat, lng }) {
+  const clampedLat = Math.max(-85.0511, Math.min(85.0511, lat))
+  const sin = Math.sin(clampedLat * Math.PI / 180)
+  return {
+    x: (lng + 180) / 360,
+    y: 0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI),
+  }
+}
+
+function fromNormalizedMercator({ x, y }) {
+  const lng = x * 360 - 180
+  const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI
+  return { lat, lng }
+}
+
+function calculatePreviewCamera(payload) {
+  const frame = document.getElementById(previewId)
+  const frameRect = frame?.getBoundingClientRect()
+  const ratioValues = { '3:4': 3 / 4, '4:5': 4 / 5, '9:16': 9 / 16 }
+  const ratio = ratioValues[payload.canvasRatio] ?? 3 / 4
+  const fallbackHeight = Math.min(window.innerHeight * 0.74, 640)
+  const width = frameRect?.width ?? fallbackHeight * ratio
+  const height = frameRect?.height ?? fallbackHeight
+  const left = frameRect?.left ?? (window.innerWidth - width) / 2
+  const top = frameRect?.top ?? (window.innerHeight - height) / 2
+  const points = [...(payload.geometry ?? []), ...(payload.places ?? [])]
+    .filter((point) => Number.isFinite(point?.lat) && Number.isFinite(point?.lng))
+    .map(toNormalizedMercator)
+  if (!points.length) return null
+
+  const minX = Math.min(...points.map((point) => point.x))
+  const maxX = Math.max(...points.map((point) => point.x))
+  const minY = Math.min(...points.map((point) => point.y))
+  const maxY = Math.max(...points.map((point) => point.y))
+  const sidePadding = Math.min(54, width * 0.14)
+  const topReserve = Math.min(132, height * 0.26)
+  const bottomReserve = Math.min(122, height * 0.24)
+  const usableWidth = Math.max(80, width - sidePadding * 2)
+  const usableHeight = Math.max(80, height - topReserve - bottomReserve)
+  const spanX = Math.max(maxX - minX, 1e-7)
+  const spanY = Math.max(maxY - minY, 1e-7)
+  const zoomX = Math.log2(usableWidth / (256 * spanX))
+  const zoomY = Math.log2(usableHeight / (256 * spanY))
+  const zoom = Math.max(3, Math.min(18, Math.floor(Math.min(zoomX, zoomY) * 10) / 10))
+  const scale = 256 * 2 ** zoom
+  const boundsCenter = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+  const desiredScreenCenter = {
+    x: left + width / 2,
+    y: top + topReserve + usableHeight / 2,
+  }
+  const cameraCenter = {
+    x: boundsCenter.x + (window.innerWidth / 2 - desiredScreenCenter.x) / scale,
+    y: boundsCenter.y + (window.innerHeight / 2 - desiredScreenCenter.y) / scale,
+  }
+
+  return { ...fromNormalizedMercator(cameraCenter), zoom }
+}
+
 function renderRoutePath(frame, payload) {
   const camera = getMapCamera()
   if (!Array.isArray(payload.geometry) || payload.geometry.length < 2) return
@@ -297,5 +355,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'TRIPCANVAS_PREVIEW_ROUTE') {
     renderPreview(message.payload)
     sendResponse({ ok: true })
+  }
+  if (message?.type === 'TRIPCANVAS_CALCULATE_PREVIEW_CAMERA') {
+    sendResponse({ camera: calculatePreviewCamera(message.payload) })
   }
 })
