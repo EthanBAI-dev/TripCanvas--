@@ -590,3 +590,24 @@
 
 - 项目所有者需确定模型供应商并部署符合 `docs/AI_ROUTE_API.md` 的服务端端点，之后再进行真实 AI 端到端验证。
 - Google 照片 URI 不应长期缓存；副图导出仍需在目标浏览器验证跨域图片像素是否可被 `html-to-image` 读取。
+
+---
+
+## 2026-08-18 — DeepSeek 服务端路线规划
+
+**完成**
+
+- 新增 DeepSeek 服务端适配器，使用官方 OpenAI 兼容 `/chat/completions` 与 JSON Output；默认模型为 `deepseek-v4-flash`。
+- Vite 开发服务器新增同源 `/api/ai/plan-route` 中间件，DeepSeek Key 仅从无 `VITE_` 前缀的服务端环境变量读取。
+- 模型系统提示约束 2–12 个真实地点、精确搜索词、分段出行方式和 120 字以内实用说明；禁止模型提供坐标、图片和路线 geometry。
+- DeepSeek 空内容自动重试一次，返回内容再次经过 TripCanvas Zod schema 校验；第一站、终点和到达方式会在服务端规范化。
+
+**验证**
+
+- 未配置 Key 时本地 API 返回 503 和明确错误，不会返回 mock 路线。
+- TypeScript 检查与生产构建通过；构建产物未发现真实 `sk-` 密钥模式。
+
+**安全与部署**
+
+- 用户在对话中提供的 Key 已视为暴露，未写入仓库或本地文件；需要在 DeepSeek 控制台轮换后再进行真实计费请求测试。
+- 当前服务端中间件用于本地开发；上线到纯静态托管时仍需迁移成相应平台的 Serverless Function。

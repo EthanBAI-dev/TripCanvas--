@@ -61,5 +61,8 @@ VITE_ROUTING_PROVIDER=google
 
 - Set `VITE_AI_ROUTE_ENDPOINT` to a same-origin or CORS-enabled server endpoint that follows `docs/AI_ROUTE_API.md`.
 - Store the model provider key only on that server. Never use a `VITE_` variable for an OpenAI, Gemini, or other model secret.
+- 本地开发已内置 DeepSeek 代理，密钥变量为 `DEEPSEEK_API_KEY`，默认模型为 `deepseek-v4-flash`；修改 `.env.local` 后必须重启 Vite。
+- Vite 中间件只服务本地开发。纯静态部署前，需要把同一逻辑部署为平台的 Serverless Function，再让 `VITE_AI_ROUTE_ENDPOINT` 指向该函数。
 - The AI endpoint proposes names, order, travel modes, and short notes. Google Places remains the source of Place IDs, coordinates, photos, and attributions; Google Routes remains the source of geometry and travel time.
 - Google Places photo URIs must be refreshed and must not be treated as permanently cacheable media.
+- 任何曾出现在聊天、截图、Issue 或日志里的 DeepSeek Key 都必须重新生成并停用旧值，不能继续作为生产密钥。

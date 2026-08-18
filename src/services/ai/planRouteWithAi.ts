@@ -1,15 +1,11 @@
 import type { AiRoutePlan } from '../../types/aiRoutePlan.ts'
 import { aiRoutePlanSchema } from './aiRoutePlanSchema.ts'
 
-const endpoint = import.meta.env.VITE_AI_ROUTE_ENDPOINT?.trim()
+const endpoint = import.meta.env.VITE_AI_ROUTE_ENDPOINT?.trim() || '/api/ai/plan-route'
 
 export async function planRouteWithAi(prompt: string): Promise<AiRoutePlan> {
   const normalizedPrompt = prompt.trim()
   if (!normalizedPrompt) throw new Error('请输入旅行路线想法。')
-  if (!endpoint) {
-    throw new Error('尚未配置 AI 路线服务。请设置 VITE_AI_ROUTE_ENDPOINT。')
-  }
-
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -30,4 +26,3 @@ export async function planRouteWithAi(prompt: string): Promise<AiRoutePlan> {
   }
   return result.data
 }
-

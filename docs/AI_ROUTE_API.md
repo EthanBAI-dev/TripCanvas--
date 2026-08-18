@@ -2,6 +2,21 @@
 
 TripCanvas keeps model credentials on a server. The Web App and Chrome Side Panel call the URL configured by `VITE_AI_ROUTE_ENDPOINT`; they never receive an OpenAI, Gemini, or other model API key.
 
+## DeepSeek local development
+
+The Vite development server implements this endpoint with DeepSeek JSON Output. Add a newly generated key to the ignored `.env.local` file:
+
+```dotenv
+DEEPSEEK_API_KEY=your_rotated_server_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+VITE_AI_ROUTE_ENDPOINT=/api/ai/plan-route
+```
+
+Restart `npm run dev` after changing `.env.local`. `DEEPSEEK_API_KEY` intentionally has no `VITE_` prefix, so Vite does not expose it through `import.meta.env` or include it in the browser bundle.
+
+The development middleware sends a non-streaming `POST /chat/completions` request with `response_format: { "type": "json_object" }`. Empty model content is retried once; every successful response is validated against the same TripCanvas route schema used by the browser.
+
 ## Request
 
 `POST VITE_AI_ROUTE_ENDPOINT`
@@ -56,4 +71,3 @@ The server should return a non-2xx response for authentication, quota, model, or
 ## Photo handling
 
 TripCanvas uses the first Google Places photo for each resolved place. The photo URI is refreshed by a new Places request rather than treated as a permanent asset. The author attribution and Google Maps source URL travel with the project and are rendered on detail pages.
-
