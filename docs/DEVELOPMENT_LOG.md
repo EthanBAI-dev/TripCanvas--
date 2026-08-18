@@ -638,3 +638,18 @@
 - TypeScript 检查、生产构建、扩展脚本语法和 Manifest JSON 解析通过。
 - API 预检端点返回 204；缺少 DeepSeek 服务端 Key 时组合规划端点返回明确 503。
 - 仓库密钥模式扫描通过；现有前端仍保留大包体积提示。
+
+---
+
+## 2026-08-18 — 本地真实 AI 与 Google API 联调
+
+**完成**
+
+- 在被 Git 忽略的 `.env.local` 临时配置 DeepSeek Key；未将 Key 输出、提交或写入扩展包。
+- 本地 Vite API 在开发期间临时回退使用现有 Google Maps 开发 Key，生产仍要求独立的 `GOOGLE_MAPS_API_KEY`。
+- 使用“涩谷到表参道半日 City Walk，咖啡、拍照、买手店，不想走太远”完成端到端真实联调：DeepSeek 草案、Google Places 地点确认和 Google Routes 分段计算均成功。
+- 根据第一次过长结果收紧模型提示：半日行程默认 3–5 站、短距离目标 5 km 内，并禁止为凑数量加入远处地点；复测得到 6 站、约 6.7 km、约 97 分钟的路线。
+
+**安全**
+
+- 用户在聊天中提供的 DeepSeek Key 仅可临时本地使用；上线或共享扩展前必须重新生成并停用该 Key。

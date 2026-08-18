@@ -33,7 +33,9 @@ function handleOptions(request: IncomingMessage, response: ServerResponse): bool
 }
 
 function googleApiKey(environment: Record<string, string>): string {
-  return environment.GOOGLE_MAPS_API_KEY?.trim() || ''
+  // The VITE fallback is local-development compatibility only. Production API
+  // deployments must use the server-only GOOGLE_MAPS_API_KEY.
+  return environment.GOOGLE_MAPS_API_KEY?.trim() || environment.VITE_GOOGLE_MAPS_API_KEY?.trim() || ''
 }
 
 function deepSeekRouteApi(environment: Record<string, string>): Plugin {

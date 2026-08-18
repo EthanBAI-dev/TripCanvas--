@@ -19,6 +19,8 @@ GOOGLE_MAPS_API_KEY=your_server_restricted_key
 
 Chrome 扩展调用的 Places Web Service 和 Routes REST 使用单独的 `GOOGLE_MAPS_API_KEY`。该 Key 没有 `VITE_` 前缀，只存在于 API 服务端；生产环境应按服务器出口 IP 限制，并只允许 Places API（New）和 Routes API。
 
+本地联调可临时回退读取已有的 `VITE_GOOGLE_MAPS_API_KEY`，以便迁移期间测试，但该回退只适用于 Vite 开发中间件，不能作为生产配置。
+
 ## Google Cloud Console 配置
 
 在使用该 Key 的同一个 Google Cloud 项目中：
