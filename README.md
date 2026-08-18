@@ -10,7 +10,7 @@ v0.1 已完成；v0.2 的 Prompt 草案、候选确认和可配置 geocoding/rou
 
 `Prompt / 地点列表 → geocoding → 路线图 → 标注 → PNG 导出`
 
-详细工作计划见 [docs/PLAN.md](docs/PLAN.md)，持续进展见 [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)。
+详细工作计划见 [docs/PLAN.md](docs/PLAN.md)，持续进展见 [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)，部署与 Google Key 安全配置见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
 
 ## 当前能力
 
@@ -80,18 +80,20 @@ Google Routes 与 Google 底图必须成套启用。编辑器使用 Google 地�
 
 浏览器插件导入消息格式见 [docs/PLUGIN_IMPORT.md](docs/PLUGIN_IMPORT.md)。
 
+上线时请遵循 [部署与 Google Maps 配置](docs/DEPLOYMENT.md)：Key 必须同时配置 HTTP Referrer 限制和 API 限制，且不得提交到仓库。
+
 ## 发展路线
 
 - **v0.1**：地点列表生成可编辑、可导出的路线图。
 - **v0.2**：Prompt 解析为经过校验的旅行路线草案，接入真实地点搜索。
 - **v0.3**：路线模板、多图 ZIP、页面编排、品牌水印、详情内容和插件导入已完成。
-- **v0.4**：使用真实 Key 验证 Google Places/Routes/Static Maps，并封装 Chrome 扩展。
+- **v0.4**：Google Maps、Routes、Static Maps 与 Chrome 扩展导入已完成本地验证；下一步是部署与真实地点搜索体验打磨。
 
 ## 当前限制
 
 - 无 Google/OSRM 配置时仍使用东京演示坐标与直线连线，不代表真实步行路线。
 - 使用 Carto 公共底图作为开发底图；上线前须确认稳定性、配额、归属与导出场景的适用性。
 - 地图编辑器与 html-to-image 的导出依赖浏览器 WebGL/CORS 能力；部分设备或底图资源可能导致导出失败。
-- 当前运行配置仍使用本地 mock 地点和直线路线；真实搜索及路线 adapter 已实现，但尚未配置和验证生产服务端点。
-- Google 模式需要启用计费和三个 API；当前仓库未包含 Key，因此仅完成类型检查与无 Key 回退验证，真实 Google 请求待项目所有者配置后回归。
+- 默认仍使用本地 mock 地点；生产环境的真实地点搜索服务需要按目标地区、成本和配额另行选择及配置。
+- Google 模式需要启用计费和三个 API；真实联调已通过，但仓库不包含 Key，部署时必须依照 [部署文档](docs/DEPLOYMENT.md) 设置受限环境变量。
 - 站点详情页目前以文字信息为主，尚未支持用户上传照片或为每站配置独立图片。

@@ -394,3 +394,13 @@
 - `extension/manifest.json` 通过 JSON 解析。
 - 三个扩展脚本通过 Node 语法检查。
 - Web App 的 `npm run lint` 与 `npm run build` 通过；保留现有包体积提示。
+
+---
+
+## 2026-08-18 — 部署与 Key 安全说明
+
+**完成**
+
+- 新增 `docs/DEPLOYMENT.md`，记录 Google Maps JavaScript API、Routes API、Maps Static API 的启用、Referrer 限制和 API 限制步骤。
+- 记录上线验证清单以及 Key 出现在聊天、日志或公开内容后的轮换、重新部署和旧 Key 停用流程。
+- README 增加部署文档入口，并更新 Google 真实联调与 Chrome 扩展已完成的状态。
