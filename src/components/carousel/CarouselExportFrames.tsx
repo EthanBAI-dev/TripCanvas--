@@ -92,6 +92,8 @@ function PlacePage({ page, project }: { page: CarouselPage; project: TripCanvasP
 
   const placeNumber = (page.placeIndex ?? 0) + 1
   const safeImageUrl = getSafeExternalUrl(place.imageUrl)
+  const safeImageSourceUrl = getSafeExternalUrl(place.imageSourceUrl)
+  const attributionNames = place.imageAttributions?.map((attribution) => attribution.displayName).join('、')
   const hasTopWatermark = project.carousel.watermark.enabled && project.carousel.watermark.position.startsWith('top-')
 
   return (
@@ -131,6 +133,18 @@ function PlacePage({ page, project }: { page: CarouselPage; project: TripCanvasP
             referrerPolicy="no-referrer"
             src={safeImageUrl}
           />
+          {attributionNames || safeImageSourceUrl ? (
+            <a
+              className="absolute bottom-2 left-2 max-w-[85%] truncate rounded-full bg-black/55 px-2.5 py-1 text-[8px] font-semibold text-white backdrop-blur"
+              href={safeImageSourceUrl ?? undefined}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {attributionNames
+                ? `照片：${attributionNames}`
+                : '在 Google Maps 查看照片'}
+            </a>
+          ) : null}
         </div>
       ) : null}
       <div className="relative mt-auto rounded-2xl border border-white/70 bg-white/62 p-5 backdrop-blur">

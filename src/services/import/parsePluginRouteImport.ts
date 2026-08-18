@@ -29,6 +29,15 @@ const placeSchema = z.object({
     .url()
     .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), '图片仅支持 http/https 链接')
     .optional(),
+  imageSourceUrl: z
+    .url()
+    .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), '图片来源仅支持 http/https 链接')
+    .optional(),
+  imageAttributions: z.array(z.object({
+    displayName: z.string().trim().min(1),
+    uri: z.url().optional(),
+    photoUri: z.url().optional(),
+  })).optional(),
   arrivalMode: z.enum(['walking', 'driving']).optional(),
   lat: z.number().finite().min(-90).max(90),
   lng: z.number().finite().min(-180).max(180),

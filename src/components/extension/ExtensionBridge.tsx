@@ -3,7 +3,9 @@ import { searchGooglePlaces } from '../../services/google/searchGooglePlaces.ts'
 import { useProjectStore } from '../../store/projectStore.ts'
 import type { ExtensionPlaceSearchRequest, ExtensionPlaceSearchResult } from '../../types/placeSearch.ts'
 import type { ExtensionRoutePreviewRequest, ExtensionRoutePreviewResult } from '../../types/placeSearch.ts'
+import type { ExtensionAiRoutePlanRequest, ExtensionAiRoutePlanResult } from '../../types/placeSearch.ts'
 import { calculateMixedRoute } from '../../services/routing/calculateMixedRoute.ts'
+import { resolveAiRoutePlan } from '../../services/ai/resolveAiRoutePlan.ts'
 import type { Place } from '../../types/place.ts'
 
 function isSearchRequest(value: unknown): value is ExtensionPlaceSearchRequest {
@@ -34,6 +36,16 @@ function isRouteRequest(value: unknown): value is ExtensionRoutePreviewRequest {
     )
 }
 
+function isAiRouteRequest(value: unknown): value is ExtensionAiRoutePlanRequest {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<ExtensionAiRoutePlanRequest>
+  return candidate.type === 'TRIPCANVAS_EXTENSION_PLAN_AI_ROUTE'
+    && typeof candidate.requestId === 'string'
+    && typeof candidate.prompt === 'string'
+    && candidate.prompt.trim().length >= 4
+    && candidate.prompt.length <= 1_000
+}
+
 function toPreviewPlaces(request: ExtensionRoutePreviewRequest): Place[] {
   return request.places.map((place, index) => ({
     id: `extension-preview-${index}`,
@@ -50,6 +62,28 @@ export function ExtensionBridge() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent<unknown>) => {
       if (event.source !== window || event.origin !== window.location.origin) return
+
+      if (isAiRouteRequest(event.data)) {
+        const request = event.data
+        void resolveAiRoutePlan(request.prompt, useProjectStore.getState().project.mapView.center)
+          .then((plan) => {
+            const result: ExtensionAiRoutePlanResult = {
+              type: 'TRIPCANVAS_EXTENSION_AI_ROUTE_RESULT',
+              requestId: request.requestId,
+              plan,
+            }
+            window.postMessage(result, window.location.origin)
+          })
+          .catch((error: unknown) => {
+            const result: ExtensionAiRoutePlanResult = {
+              type: 'TRIPCANVAS_EXTENSION_AI_ROUTE_RESULT',
+              requestId: request.requestId,
+              error: error instanceof Error ? error.message : 'AI 路线规划失败。',
+            }
+            window.postMessage(result, window.location.origin)
+          })
+        return
+      }
 
       if (isRouteRequest(event.data)) {
         const request = event.data

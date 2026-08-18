@@ -10,6 +10,7 @@ interface ImportMetaEnv {
   readonly VITE_ROUTING_API_BASE_URL?: string
   readonly VITE_OSRM_DRIVING_PROFILE?: string
   readonly VITE_OSRM_WALKING_PROFILE?: string
+  readonly VITE_AI_ROUTE_ENDPOINT?: string
 }
 
 interface ImportMeta {

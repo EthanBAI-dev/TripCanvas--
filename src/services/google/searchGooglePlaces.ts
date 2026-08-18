@@ -13,7 +13,7 @@ export async function searchGooglePlaces(
 
   const { Place } = await loadGooglePlacesLibrary()
   const { places } = await Place.searchByText({
-    fields: ['id', 'displayName', 'formattedAddress', 'location', 'googleMapsURI'],
+    fields: ['id', 'displayName', 'formattedAddress', 'location', 'googleMapsURI', 'photos'],
     language: 'zh-CN',
     locationBias: { lat: locationBias.lat, lng: locationBias.lng },
     maxResultCount: 5,
@@ -34,6 +34,7 @@ export async function searchGooglePlaces(
       return []
     }
 
+    const photo = place.photos?.[0]
     return [{
       id: place.id,
       name,
@@ -41,6 +42,13 @@ export async function searchGooglePlaces(
       lat,
       lng,
       externalUrl: place.googleMapsURI ?? undefined,
+      imageUrl: photo?.getURI({ maxHeight: 900, maxWidth: 1200 }),
+      imageSourceUrl: photo?.googleMapsURI ?? place.googleMapsURI ?? undefined,
+      imageAttributions: photo?.authorAttributions.map((attribution) => ({
+          displayName: attribution.displayName,
+          uri: attribution.uri ?? undefined,
+          photoUri: attribution.photoURI ?? undefined,
+        })),
     }]
   })
 }

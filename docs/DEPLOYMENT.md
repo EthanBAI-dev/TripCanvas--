@@ -56,3 +56,10 @@ VITE_ROUTING_PROVIDER=google
 5. 检查 Git 历史、构建日志与公开文档，确认没有真实 Key。
 
 当前项目在推送时排除了 `.env.local`；正式发布前仍建议轮换此前用于本地联调的 Key。
+
+## AI 路线服务
+
+- Set `VITE_AI_ROUTE_ENDPOINT` to a same-origin or CORS-enabled server endpoint that follows `docs/AI_ROUTE_API.md`.
+- Store the model provider key only on that server. Never use a `VITE_` variable for an OpenAI, Gemini, or other model secret.
+- The AI endpoint proposes names, order, travel modes, and short notes. Google Places remains the source of Place IDs, coordinates, photos, and attributions; Google Routes remains the source of geometry and travel time.
+- Google Places photo URIs must be refreshed and must not be treated as permanently cacheable media.

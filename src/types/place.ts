@@ -21,6 +21,12 @@ export interface Place extends LngLat {
   category: PlaceCategory
   note?: string
   imageUrl?: string
+  imageSourceUrl?: string
+  imageAttributions?: Array<{
+    displayName: string
+    uri?: string
+    photoUri?: string
+  }>
   arrivalMode?: 'walking' | 'driving'
   externalUrl?: string
   googlePlaceId?: string

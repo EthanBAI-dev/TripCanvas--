@@ -34,6 +34,35 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
   }
 
+  if (message?.type === 'TRIPCANVAS_PLAN_AI_ROUTE') {
+    const requestId = crypto.randomUUID()
+    const timeoutId = window.setTimeout(() => {
+      window.removeEventListener('message', handleAiResult)
+      sendResponse({ error: 'AI 规划、地点确认或路线计算超时。' })
+    }, 60_000)
+
+    function handleAiResult(event) {
+      if (
+        event.source !== window
+        || event.origin !== window.location.origin
+        || event.data?.type !== 'TRIPCANVAS_EXTENSION_AI_ROUTE_RESULT'
+        || event.data?.requestId !== requestId
+      ) return
+
+      window.clearTimeout(timeoutId)
+      window.removeEventListener('message', handleAiResult)
+      sendResponse({ plan: event.data.plan, error: event.data.error })
+    }
+
+    window.addEventListener('message', handleAiResult)
+    window.postMessage({
+      type: 'TRIPCANVAS_EXTENSION_PLAN_AI_ROUTE',
+      requestId,
+      prompt: message.prompt,
+    }, window.location.origin)
+    return true
+  }
+
   if (message?.type === 'TRIPCANVAS_CALCULATE_PREVIEW_ROUTE') {
     const requestId = crypto.randomUUID()
     const timeoutId = window.setTimeout(() => {

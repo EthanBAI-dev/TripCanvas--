@@ -107,7 +107,9 @@ function renderCandidates(candidates) {
         externalUrl: candidate.externalUrl,
         googlePlaceId: candidate.id,
         note: '',
-        imageUrl: '',
+        imageUrl: candidate.imageUrl || '',
+        imageSourceUrl: candidate.imageSourceUrl,
+        imageAttributions: candidate.imageAttributions,
         arrivalMode: 'walking',
       })
       normalizeArrivalModes()
@@ -330,8 +332,60 @@ byId('toggle-preview').addEventListener('click', () => {
   saveProject(); void syncPreview()
 })
 
-byId('ai-plan').addEventListener('click', () => {
-  setStatus('AI 规划接口将在下一阶段接入；它会直接修改下面的路径点，不会生成另一份路线。')
+byId('ai-plan').addEventListener('click', async () => {
+  const prompt = byId('ai-prompt').value.trim()
+  if (prompt.length < 4) { setStatus('请先写下路线想法。', true); return }
+  const target = await getTripCanvasTab()
+  if (!target?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
+
+  const button = byId('ai-plan')
+  button.disabled = true
+  button.textContent = 'AI 正在规划并核对地点…'
+  setStatus('AI 正在生成站点与简洁说明，随后会调用 Google Places 和 Routes。')
+  const response = await chrome.tabs.sendMessage(target.id, {
+    type: 'TRIPCANVAS_PLAN_AI_ROUTE',
+    prompt,
+  }).catch(() => null)
+  button.disabled = false
+  button.textContent = '规划为路径点'
+
+  if (!response?.plan) {
+    setStatus(response?.error ?? 'AI 路线规划失败。', true)
+    return
+  }
+  const plan = response.plan
+  project.title = plan.title
+  project.subtitle = plan.subtitle || ''
+  project.canvasRatio = plan.canvasRatio || project.canvasRatio
+  project.places = plan.places.map((place) => ({
+    name: place.name,
+    address: place.address,
+    lat: place.lat,
+    lng: place.lng,
+    externalUrl: place.externalUrl,
+    googlePlaceId: place.id,
+    note: place.note,
+    imageUrl: place.imageUrl || '',
+    imageSourceUrl: place.imageSourceUrl,
+    imageAttributions: place.imageAttributions,
+    arrivalMode: place.arrivalMode,
+    category: place.category,
+  }))
+  project.routeGeometry = plan.geometry
+  project.routeSegments = plan.segments || []
+  project.routeSummary = {
+    distanceMeters: plan.distanceMeters || 0,
+    durationSeconds: plan.durationSeconds || 0,
+    warning: plan.warning,
+  }
+  normalizeArrivalModes()
+  saveProject()
+  renderPlaces()
+  renderRouteSummary()
+  setStatus('AI 路线和 Google 真实地点已生成，正在适配地图画幅…')
+  await fitGoogleMapsToPreview()
+  await syncPreview()
+  setStatus(plan.warning ? `规划完成。${plan.warning}` : `规划完成：${project.places.length} 个真实路径点。`)
 })
 
 byId('send').addEventListener('click', async () => {
