@@ -34,6 +34,53 @@ async function getTripCanvasTab() {
   return tabs[0]
 }
 
+function createGoogleMapsRouteUrl() {
+  const origin = project.places[0]
+  const destination = project.places.at(-1)
+  if (!origin || !destination) return null
+
+  const url = new URL('https://www.google.com/maps/dir/')
+  url.searchParams.set('api', '1')
+  url.searchParams.set('origin', `${origin.lat},${origin.lng}`)
+  url.searchParams.set('destination', `${destination.lat},${destination.lng}`)
+  url.searchParams.set('travelmode', project.travelMode)
+  const waypoints = project.places.slice(1, -1)
+  if (waypoints.length) {
+    url.searchParams.set('waypoints', waypoints.map((place) => `${place.lat},${place.lng}`).join('|'))
+  }
+  return url.toString()
+}
+
+async function waitForTabComplete(tabId, timeoutMs = 12_000) {
+  const current = await chrome.tabs.get(tabId).catch(() => null)
+  if (current?.status === 'complete') return
+
+  await new Promise((resolve) => {
+    const timeoutId = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(handleUpdate)
+      resolve()
+    }, timeoutMs)
+    function handleUpdate(updatedTabId, changeInfo) {
+      if (updatedTabId !== tabId || changeInfo.status !== 'complete') return
+      clearTimeout(timeoutId)
+      chrome.tabs.onUpdated.removeListener(handleUpdate)
+      resolve()
+    }
+    chrome.tabs.onUpdated.addListener(handleUpdate)
+  })
+}
+
+async function openGoogleMapsRoute() {
+  const routeUrl = createGoogleMapsRouteUrl()
+  if (!routeUrl) return false
+  const mapTab = await getGoogleMapsTab()
+  if (!mapTab?.id) return false
+
+  await chrome.tabs.update(mapTab.id, { url: routeUrl })
+  await waitForTabComplete(mapTab.id)
+  return true
+}
+
 function renderCandidates(candidates) {
   const container = byId('place-candidates')
   container.replaceChildren()
@@ -247,8 +294,14 @@ byId('update-route-preview').addEventListener('click', async () => {
   }
   saveProject()
   renderRouteSummary()
+  setStatus('路线已计算，正在让 Google Maps 打开多点导航并适配视野…')
+  const openedNativeRoute = await openGoogleMapsRoute()
   await syncPreview()
-  setStatus(response.warning ? `路线已更新。${response.warning}` : '真实路线已显示在地图预览框中。')
+  if (!openedNativeRoute) {
+    setStatus('路线已计算，但没有找到已打开的 Google Maps 标签页。', true)
+    return
+  }
+  setStatus(response.warning ? `路线已显示。${response.warning}` : 'Google Maps 多点路线和 TripCanvas 预览线均已显示。')
 })
 
 byId('toggle-preview').addEventListener('click', () => {

@@ -496,3 +496,21 @@
 **风险**
 
 - 预览投影依赖 Google Maps URL 的 `@lat,lng,zoom` 相机参数；Google 调整 URL 格式时需更新解析器。高清导出仍由 Web App 的官方 Maps/Routes/Static Maps 链路完成。
+
+---
+
+## 2026-08-18 — 修复侧边栏路线不可见
+
+**问题**
+
+- 路径点已保存且 Routes geometry 已返回，但 Google Maps 页面没有进入多点导航视图；当前镜头未覆盖路线时，TripCanvas 叠加折线也位于画幅之外。
+
+**修复**
+
+- 点击“更新真实路线预览”后，扩展使用起点、终点、途经点和出行方式生成 Google Maps Directions URL，并让现有 Google Maps 标签页打开原生多点路线、自动适配视野。
+- Google Maps 页面完成导航后再同步 TripCanvas 画幅叠加层。
+- 当 URL 暂时没有 `@lat,lng,zoom` 相机参数时，叠加层按路线边界自适应画幅，确保折线和编号至少可见；相机参数出现后自动切换为地图对齐投影。
+
+**验证**
+
+- 扩展脚本通过 Node 语法检查，TypeScript 与生产构建通过。

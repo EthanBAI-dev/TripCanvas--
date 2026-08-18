@@ -45,15 +45,34 @@ function toWorldPoint({ lat, lng }, zoom) {
 
 function renderRoutePath(frame, payload) {
   const camera = getMapCamera()
-  if (!camera || !Array.isArray(payload.geometry) || payload.geometry.length < 2) return
+  if (!Array.isArray(payload.geometry) || payload.geometry.length < 2) return
   const frameRect = frame.getBoundingClientRect()
-  const center = toWorldPoint(camera, camera.zoom)
-  const projectPoint = (point) => {
-    const world = toWorldPoint(point, camera.zoom)
-    return {
-      x: window.innerWidth / 2 + world.x - center.x - frameRect.left,
-      y: window.innerHeight / 2 + world.y - center.y - frameRect.top,
+  let projectPoint
+
+  if (camera) {
+    const center = toWorldPoint(camera, camera.zoom)
+    projectPoint = (point) => {
+      const world = toWorldPoint(point, camera.zoom)
+      return {
+        x: window.innerWidth / 2 + world.x - center.x - frameRect.left,
+        y: window.innerHeight / 2 + world.y - center.y - frameRect.top,
+      }
     }
+  } else {
+    const points = [...payload.geometry, ...payload.places]
+    const lngs = points.map((point) => point.lng)
+    const lats = points.map((point) => point.lat)
+    const minLng = Math.min(...lngs)
+    const maxLng = Math.max(...lngs)
+    const minLat = Math.min(...lats)
+    const maxLat = Math.max(...lats)
+    const padding = 42
+    const lngRange = Math.max(maxLng - minLng, 0.0001)
+    const latRange = Math.max(maxLat - minLat, 0.0001)
+    projectPoint = (point) => ({
+      x: padding + (point.lng - minLng) / lngRange * (frameRect.width - padding * 2),
+      y: padding + (maxLat - point.lat) / latRange * (frameRect.height - padding * 2),
+    })
   }
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
