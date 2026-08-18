@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TripCanvas Route Importer",
   "description": "Plan and edit multi-stop travel routes beside Google Maps.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "action": {
     "default_title": "打开旅图 TripCanvas 侧边栏"
   },
@@ -12,7 +12,7 @@
   "side_panel": {
     "default_path": "popup.html"
   },
-  "permissions": ["tabs", "storage", "sidePanel"],
+  "permissions": ["tabs", "storage", "sidePanel", "downloads"],
   "host_permissions": [
     "https://www.google.com/maps/*",
     "https://maps.google.com/*",

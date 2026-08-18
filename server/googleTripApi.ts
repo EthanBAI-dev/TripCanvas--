@@ -37,6 +37,18 @@ interface GoogleServerOptions {
   apiKey: string
 }
 
+export interface StaticMapSnapshotRequest {
+  center: { lat: number; lng: number }
+  zoom: number
+  canvasRatio: '3:4' | '4:5' | '9:16'
+}
+
+export interface StaticMapSnapshot {
+  imageDataUrl: string
+  logicalWidth: number
+  logicalHeight: number
+}
+
 const searchResponseSchema = z.object({
   places: z.array(z.object({
     id: z.string(),
@@ -225,3 +237,39 @@ export async function calculateGoogleRouteRest(
   }
 }
 
+const STATIC_MAP_SIZES: Record<StaticMapSnapshotRequest['canvasRatio'], [number, number]> = {
+  '3:4': [480, 640],
+  '4:5': [512, 640],
+  '9:16': [360, 640],
+}
+
+export async function createMinimalStaticMap(
+  request: StaticMapSnapshotRequest,
+  options: GoogleServerOptions,
+): Promise<StaticMapSnapshot> {
+  const apiKey = requireApiKey(options)
+  const [logicalWidth, logicalHeight] = STATIC_MAP_SIZES[request.canvasRatio]
+  const url = new URL('https://maps.googleapis.com/maps/api/staticmap')
+  url.searchParams.set('center', `${request.center.lat},${request.center.lng}`)
+  url.searchParams.set('zoom', String(Math.max(1, Math.min(20, Math.round(request.zoom)))))
+  url.searchParams.set('size', `${logicalWidth}x${logicalHeight}`)
+  url.searchParams.set('scale', '2')
+  url.searchParams.set('format', 'png')
+  url.searchParams.set('language', 'zh-CN')
+  url.searchParams.append('style', 'element:labels|visibility:off')
+  url.searchParams.append('style', 'feature:road|element:geometry|saturation:-60|lightness:20')
+  url.searchParams.append('style', 'feature:poi|visibility:off')
+  url.searchParams.append('style', 'feature:transit|visibility:off')
+  url.searchParams.set('key', apiKey)
+
+  const response = await fetch(url, { signal: AbortSignal.timeout(25_000) })
+  if (!response.ok) throw new Error(`Google Static Maps 请求失败（${response.status}）。`)
+  const contentType = response.headers.get('content-type') ?? 'image/png'
+  if (!contentType.startsWith('image/')) throw new Error('Google Static Maps 没有返回图片。')
+  const bytes = Buffer.from(await response.arrayBuffer())
+  return {
+    imageDataUrl: `data:${contentType};base64,${bytes.toString('base64')}`,
+    logicalWidth,
+    logicalHeight,
+  }
+}

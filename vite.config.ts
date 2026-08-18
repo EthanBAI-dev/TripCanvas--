@@ -3,7 +3,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { planRouteWithDeepSeek } from './server/deepseekRoutePlanner.ts'
-import { calculateGoogleRouteRest, searchGooglePlacesRest } from './server/googleTripApi.ts'
+import { calculateGoogleRouteRest, createMinimalStaticMap, searchGooglePlacesRest } from './server/googleTripApi.ts'
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = []
@@ -124,6 +124,43 @@ function deepSeekRouteApi(environment: Record<string, string>): Plugin {
           sendJson(response, 200, route)
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : 'Google Routes 计算失败。'
+          sendJson(response, message.includes('尚未配置') ? 503 : 502, { error: message })
+        }
+      })
+
+      server.middlewares.use('/api/google/static-map', async (request, response) => {
+        if (handleOptions(request, response)) return
+        if (request.method !== 'POST') {
+          sendJson(response, 405, { error: 'Method not allowed.' })
+          return
+        }
+        try {
+          const body = await readJsonBody(request) as {
+            center?: { lat?: unknown; lng?: unknown }
+            zoom?: unknown
+            canvasRatio?: unknown
+          }
+          const lat = Number(body.center?.lat)
+          const lng = Number(body.center?.lng)
+          const zoom = Number(body.zoom)
+          const canvasRatio = body.canvasRatio
+          if (
+            !Number.isFinite(lat) || lat < -90 || lat > 90
+            || !Number.isFinite(lng) || lng < -180 || lng > 180
+            || !Number.isFinite(zoom)
+            || !['3:4', '4:5', '9:16'].includes(String(canvasRatio))
+          ) {
+            sendJson(response, 400, { error: 'Static Map 画幅参数不正确。' })
+            return
+          }
+          const snapshot = await createMinimalStaticMap({
+            center: { lat, lng },
+            zoom,
+            canvasRatio: canvasRatio as '3:4' | '4:5' | '9:16',
+          }, { apiKey: googleApiKey(environment) })
+          sendJson(response, 200, snapshot)
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Static Map 生成失败。'
           sendJson(response, message.includes('尚未配置') ? 503 : 502, { error: message })
         }
       })

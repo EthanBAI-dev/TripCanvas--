@@ -78,6 +78,9 @@ Side Panel 不再把 Web App 标签页当作 API 代理。开发版直接调用�
 
 - `POST /api/google/places/search`
 - `POST /api/google/routes/calculate`
+- `POST /api/google/static-map`
 - `POST /api/ai/plan-resolved-route`
 
 发布时需把这些接口部署在 HTTPS 域名，将 `extension/popup.js` 的 `apiBaseUrl` 改成正式地址，并在 `extension/manifest.json` 的 `host_permissions` 加入该域名。Web App 标签页只在用户主动选择“发送到高级编辑器”时需要打开。
+
+快照接口在服务端请求 Maps Static API，使用 `element:labels|visibility:off` 隐藏底图文字，再由扩展画布叠加路线和路径点名称。生产 Google Key 的 API 限制因此还需允许 Maps Static API。
