@@ -341,12 +341,19 @@ chrome.storage.local.get({ [storageKey]: null }, (result) => {
   Object.assign(project, result[storageKey] ?? {})
   project.places = Array.isArray(project.places) ? project.places : []
   project.routeGeometry = Array.isArray(project.routeGeometry) ? project.routeGeometry : []
-  bindProjectField('title', 'title')
-  bindProjectField('subtitle', 'subtitle')
   bindProjectField('travel-mode', 'travelMode')
-  bindProjectField('canvas-ratio', 'canvasRatio')
   byId('toggle-preview').textContent = project.previewVisible ? '隐藏地图预览框' : '显示地图预览框'
   renderPlaces()
   renderRouteSummary()
   void syncPreview()
+})
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type !== 'TRIPCANVAS_PREVIEW_PROJECT_PATCH' || typeof message.patch !== 'object') return
+  const patch = message.patch
+  if (typeof patch.title === 'string') project.title = patch.title.slice(0, 120)
+  if (typeof patch.subtitle === 'string') project.subtitle = patch.subtitle.slice(0, 180)
+  if (['3:4', '4:5', '9:16'].includes(patch.canvasRatio)) project.canvasRatio = patch.canvasRatio
+  saveProject()
+  sendResponse({ ok: true })
 })

@@ -115,6 +115,10 @@ function renderRoutePath(frame, payload) {
   frame.prepend(svg)
 }
 
+function savePreviewPatch(patch) {
+  chrome.runtime.sendMessage({ type: 'TRIPCANVAS_PREVIEW_PROJECT_PATCH', patch }).catch(() => undefined)
+}
+
 function renderPreview(payload) {
   lastPreviewPayload = payload
   document.getElementById(previewId)?.remove()
@@ -123,7 +127,7 @@ function renderPreview(payload) {
   const ratios = { '3:4': '3 / 4', '4:5': '4 / 5', '9:16': '9 / 16' }
   const frame = document.createElement('aside')
   frame.id = previewId
-  frame.setAttribute('aria-hidden', 'true')
+  frame.setAttribute('aria-label', 'TripCanvas 图片预览与编辑框')
   Object.assign(frame.style, {
     aspectRatio: ratios[payload.canvasRatio] ?? '3 / 4',
     border: '3px solid #0284c7',
@@ -150,15 +154,74 @@ function renderPreview(payload) {
     borderRadius: '14px 14px 12px 12px',
     margin: '12px',
     padding: '14px 16px',
+    pointerEvents: 'auto',
     zIndex: '2',
   })
-  const title = document.createElement('strong')
-  title.textContent = payload.title || '我的旅行路线'
-  Object.assign(title.style, { display: 'block', font: '700 20px/1.25 system-ui, sans-serif' })
-  const subtitle = document.createElement('small')
-  subtitle.textContent = payload.subtitle || 'TripCanvas 路线预览'
-  Object.assign(subtitle.style, { display: 'block', font: '500 12px/1.4 system-ui, sans-serif', marginTop: '5px', opacity: '.68' })
-  heading.append(title, subtitle)
+  const ratioBar = document.createElement('div')
+  Object.assign(ratioBar.style, { display: 'flex', gap: '5px', justifyContent: 'flex-end', marginBottom: '8px' })
+  ;['3:4', '4:5', '9:16'].forEach((ratio) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = ratio
+    button.setAttribute('aria-pressed', String(payload.canvasRatio === ratio))
+    Object.assign(button.style, {
+      border: payload.canvasRatio === ratio ? '1px solid #0284c7' : '1px solid #cbd5e1',
+      borderRadius: '999px',
+      color: payload.canvasRatio === ratio ? '#fff' : '#475569',
+      cursor: 'pointer',
+      font: '700 10px system-ui, sans-serif',
+      padding: '4px 8px',
+      background: payload.canvasRatio === ratio ? '#0284c7' : 'rgba(255,255,255,.82)',
+    })
+    button.addEventListener('click', () => {
+      savePreviewPatch({ canvasRatio: ratio })
+      renderPreview({ ...lastPreviewPayload, canvasRatio: ratio })
+    })
+    ratioBar.append(button)
+  })
+
+  const title = document.createElement('input')
+  title.value = payload.title || ''
+  title.placeholder = '输入主图标题'
+  title.setAttribute('aria-label', '主图标题')
+  Object.assign(title.style, {
+    background: 'transparent',
+    border: '0',
+    borderBottom: '1px dashed rgba(2,132,199,.35)',
+    boxSizing: 'border-box',
+    color: '#17324d',
+    display: 'block',
+    font: '700 20px/1.25 system-ui, sans-serif',
+    outline: 'none',
+    padding: '2px 0 5px',
+    width: '100%',
+  })
+  title.addEventListener('input', () => {
+    lastPreviewPayload.title = title.value
+    savePreviewPatch({ title: title.value })
+  })
+
+  const subtitle = document.createElement('input')
+  subtitle.value = payload.subtitle || ''
+  subtitle.placeholder = '输入副标题'
+  subtitle.setAttribute('aria-label', '副标题')
+  Object.assign(subtitle.style, {
+    background: 'transparent',
+    border: '0',
+    boxSizing: 'border-box',
+    color: '#475569',
+    display: 'block',
+    font: '500 12px/1.4 system-ui, sans-serif',
+    marginTop: '5px',
+    outline: 'none',
+    padding: '2px 0',
+    width: '100%',
+  })
+  subtitle.addEventListener('input', () => {
+    lastPreviewPayload.subtitle = subtitle.value
+    savePreviewPatch({ subtitle: subtitle.value })
+  })
+  heading.append(ratioBar, title, subtitle)
 
   const stops = document.createElement('div')
   Object.assign(stops.style, {

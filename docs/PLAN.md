@@ -216,6 +216,7 @@ MapLibre 负责地理底图和视图状态；Konva 负责可选择、可拖拽�
 - [x] Side Panel 通过 Web App 的 Google Key 调用 Places Text Search，并显示精确地点候选；候选确认后才写入路径点。
 - [x] 路径点卡片默认折叠，仅显示名称与必要排序/删除操作，展开后编辑完整内容。
 - [x] 地图预览使用按钮触发 Google Routes 计算，并把真实 geometry、编号、距离与时间投影到画幅框。
+- [x] 标题、副标题和画幅比例从 Side Panel 移到 Google Maps 预览框内直接编辑，并同步保存到扩展项目。
 
 ## 第一轮实现顺序
 

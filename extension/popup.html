@@ -10,12 +10,8 @@
     <main>
       <header><span>旅</span><div><strong>TripCanvas</strong><small>地图侧边创作台</small></div></header>
       <section class="hero">
-        <label>主图标题 <input id="title" placeholder="例如：涩谷咖啡 City Walk" /></label>
-        <label>副标题 <input id="subtitle" placeholder="例如：半日散步与咖啡路线" /></label>
-        <div class="two-columns">
-          <label>出行方式 <select id="travel-mode"><option value="walking">步行</option><option value="driving">驾车</option></select></label>
-          <label>画面比例 <select id="canvas-ratio"><option value="3:4">3:4</option><option value="4:5">4:5</option><option value="9:16">9:16</option></select></label>
-        </div>
+        <p class="canvas-edit-hint">标题、副标题和图片比例请直接在 Google Maps 的蓝色预览框上修改。</p>
+        <label>出行方式 <select id="travel-mode"><option value="walking">步行</option><option value="driving">驾车</option></select></label>
         <label>AI 路线想法 <textarea id="ai-prompt" placeholder="例如：涩谷到表参道，咖啡、拍照、买手店，不想走太远"></textarea></label>
         <button id="ai-plan" class="soft" type="button">规划为路径点</button>
         <p class="hint">AI 只会增删和调整下面的路径点；当前先保留接口，接入模型后不会改变编辑方式。</p>
@@ -30,7 +26,7 @@
         <p class="hint">从候选中确认后会保存精确坐标、地址和 Place ID；需要先打开本地 TripCanvas。</p>
       </section>
       <button id="capture" class="primary">＋ 添加当前 Google Maps 地点</button>
-      <p id="capture-hint" class="hint">打开一个地点详情后添加。地图上的预览框会同步标题、比例和站点摘要。</p>
+      <p id="capture-hint" class="hint">打开一个地点详情后添加。标题与比例直接在地图预览框中编辑。</p>
       <section>
         <div class="section-title"><strong>路线地点</strong><button id="clear" class="text-button">清空</button></div>
         <ol id="places"></ol>
