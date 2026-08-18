@@ -55,6 +55,7 @@ export function createDefaultProject(): TripCanvasProject {
       bearing: 0,
       pitch: 0,
     },
+    mapDetail: 'clean',
     places: [],
     routes: [],
     annotations: [],

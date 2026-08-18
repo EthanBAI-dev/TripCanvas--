@@ -404,3 +404,17 @@
 - 新增 `docs/DEPLOYMENT.md`，记录 Google Maps JavaScript API、Routes API、Maps Static API 的启用、Referrer 限制和 API 限制步骤。
 - 记录上线验证清单以及 Key 出现在聊天、日志或公开内容后的轮换、重新部署和旧 Key 停用流程。
 - README 增加部署文档入口，并更新 Google 真实联调与 Chrome 扩展已完成的状态。
+
+---
+
+## 2026-08-18 — Google 底图信息密度
+
+**完成**
+
+- Project JSON 新增并持久化 `mapDetail`，提供标准、清爽、极简三档底图信息密度。
+- 清爽模式隐藏 Google POI 与交通站文字；极简模式隐藏全部 Google 底图文字并弱化道路颜色，TripCanvas 自己的路线、编号与标签不受影响。
+- Google Maps JavaScript API 编辑器和 Google Static Maps PNG 导出共用同一份样式规则，所见即所得。
+
+**验证**
+
+- `npm run lint` 与 `npm run build` 通过；保留现有包体积提示。

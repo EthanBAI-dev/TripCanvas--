@@ -1,8 +1,9 @@
 import { googleMapsApiKey } from '../../services/google/googleMapsLoader.ts'
 import type { ElementSize } from '../../hooks/useElementSize.ts'
-import type { MapView } from '../../types/project.ts'
+import { GOOGLE_STATIC_STYLES } from '../../services/google/googleMapStyle.ts'
+import type { MapDetail, MapView } from '../../types/project.ts'
 
-function createStaticMapUrl(mapView: MapView, size: ElementSize): string {
+function createStaticMapUrl(mapView: MapView, mapDetail: MapDetail, size: ElementSize): string {
   const longestSide = Math.max(size.width, size.height, 1)
   const scale = Math.min(1, 640 / longestSide)
   const width = Math.max(1, Math.round(size.width * scale))
@@ -16,10 +17,11 @@ function createStaticMapUrl(mapView: MapView, size: ElementSize): string {
   url.searchParams.set('format', 'png')
   url.searchParams.set('language', 'zh-CN')
   url.searchParams.set('key', googleMapsApiKey)
+  GOOGLE_STATIC_STYLES[mapDetail].forEach((style) => url.searchParams.append('style', style))
   return url.toString()
 }
 
-export function GoogleStaticMap({ mapView, size }: { mapView: MapView; size: ElementSize }) {
+export function GoogleStaticMap({ mapView, mapDetail, size }: { mapView: MapView; mapDetail: MapDetail; size: ElementSize }) {
   if (size.width === 0 || size.height === 0) {
     return null
   }
@@ -30,7 +32,7 @@ export function GoogleStaticMap({ mapView, size }: { mapView: MapView; size: Ele
       className="absolute inset-0 size-full object-cover"
       crossOrigin="anonymous"
       data-google-static-map
-      src={createStaticMapUrl(mapView, size)}
+      src={createStaticMapUrl(mapView, mapDetail, size)}
     />
   )
 }

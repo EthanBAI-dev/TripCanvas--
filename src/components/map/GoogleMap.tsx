@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { loadGoogleMapsLibrary } from '../../services/google/googleMapsLoader.ts'
 import type { CanvasMapController } from '../../types/map.ts'
-import type { MapView } from '../../types/project.ts'
+import type { MapDetail, MapView } from '../../types/project.ts'
+import { GOOGLE_MAP_STYLES } from '../../services/google/googleMapStyle.ts'
 
 interface GoogleMapProps {
   mapView: MapView
+  mapDetail: MapDetail
   onMapReady: (map: CanvasMapController | null) => void
   onMapRender: () => void
   onMapViewChange: (mapView: MapView) => void
@@ -27,7 +29,7 @@ function matchesMapView(map: google.maps.Map, mapView: MapView): boolean {
   )
 }
 
-export function GoogleMap({ mapView, onMapReady, onMapRender, onMapViewChange }: GoogleMapProps) {
+export function GoogleMap({ mapView, mapDetail, onMapReady, onMapRender, onMapViewChange }: GoogleMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const initialMapViewRef = useRef(mapView)
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -66,6 +68,7 @@ export function GoogleMap({ mapView, onMapReady, onMapRender, onMapViewChange }:
         gestureHandling: 'greedy',
         heading: initial.bearing ?? 0,
         mapTypeControl: false,
+        styles: GOOGLE_MAP_STYLES[mapDetail],
         streetViewControl: false,
         tilt: initial.pitch ?? 0,
         zoom: initial.zoom,
@@ -141,6 +144,10 @@ export function GoogleMap({ mapView, onMapReady, onMapRender, onMapViewChange }:
       onMapReady(null)
     }
   }, [onMapReady])
+
+  useEffect(() => {
+    mapRef.current?.setOptions({ styles: GOOGLE_MAP_STYLES[mapDetail] })
+  }, [mapDetail])
 
   useEffect(() => {
     const map = mapRef.current

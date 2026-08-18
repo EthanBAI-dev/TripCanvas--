@@ -4,7 +4,7 @@ import type { Annotation } from '../types/annotation.ts'
 import type { WatermarkSettings } from '../types/carousel.ts'
 import type { Place } from '../types/place.ts'
 import type { Route, RouteStyle } from '../types/route.ts'
-import type { CanvasRatio, ExportSize, MapView, TripCanvasProject } from '../types/project.ts'
+import type { CanvasRatio, ExportSize, MapDetail, MapView, TripCanvasProject } from '../types/project.ts'
 import type { TripTemplateId } from '../types/template.ts'
 import { migrateProjectTheme } from '../services/storage/migrateProjectTheme.ts'
 import { PROJECT_STORAGE_KEY } from '../services/storage/projectStorage.ts'
@@ -20,6 +20,7 @@ interface ProjectState {
   setProject: (project: TripCanvasProject) => void
   updateProject: (patch: Partial<TripCanvasProject>) => void
   setMapView: (mapView: MapView) => void
+  setMapDetail: (mapDetail: MapDetail) => void
   setCanvasRatio: (canvasRatio: CanvasRatio) => void
   setExportSize: (exportSize: ExportSize) => void
   setGeneratedMapContent: (content: {
@@ -91,6 +92,10 @@ export const useProjectStore = create<ProjectState>()(
       setMapView: (mapView) =>
         set((state) => ({
           project: { ...state.project, mapView, updatedAt: new Date().toISOString() },
+        })),
+      setMapDetail: (mapDetail) =>
+        set((state) => ({
+          project: { ...state.project, mapDetail, updatedAt: new Date().toISOString() },
         })),
       setCanvasRatio: (canvasRatio) =>
         set((state) => ({
@@ -226,7 +231,7 @@ export const useProjectStore = create<ProjectState>()(
     {
       name: PROJECT_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
-      version: 5,
+      version: 6,
       migrate: (persistedState, version) => {
         const state = persistedState as ProjectState
         const themedProject = version < 2 ? migrateProjectTheme(state.project) : state.project
@@ -236,6 +241,7 @@ export const useProjectStore = create<ProjectState>()(
             : themedProject
         const project = migrateRouteLegs({
           ...templateProject,
+          mapDetail: templateProject.mapDetail ?? 'clean',
           carousel: normalizeCarouselSettings(templateProject.carousel),
         })
         return { ...state, project }

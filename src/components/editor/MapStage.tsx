@@ -13,6 +13,7 @@ import { AnnotationLayer } from './AnnotationLayer.tsx'
 
 export function MapStage() {
   const mapView = useProjectStore((state) => state.project.mapView)
+  const mapDetail = useProjectStore((state) => state.project.mapDetail)
   const places = useProjectStore((state) => state.project.places)
   const routes = useProjectStore((state) => state.project.routes)
   const annotations = useProjectStore((state) => state.project.annotations)
@@ -89,6 +90,7 @@ export function MapStage() {
           data-export-ignore={isExporting ? true : undefined}
         >
           <GoogleMap
+            mapDetail={mapDetail}
             mapView={mapView}
             onMapReady={handleMapReady}
             onMapRender={requestRender}
@@ -103,7 +105,7 @@ export function MapStage() {
           onMapViewChange={setMapView}
         />
       )}
-      {mapProvider === 'google' && isExporting ? <GoogleStaticMap mapView={mapView} size={size} /> : null}
+      {mapProvider === 'google' && isExporting ? <GoogleStaticMap mapDetail={mapDetail} mapView={mapView} size={size} /> : null}
       {currentTool === 'text' ? (
         <button
           aria-label="在地图上添加文字"

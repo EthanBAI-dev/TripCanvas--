@@ -19,6 +19,8 @@ export interface MapView {
   pitch?: number
 }
 
+export type MapDetail = 'standard' | 'clean' | 'minimal'
+
 export interface TripCanvasProject {
   id: string
   title: string
@@ -29,6 +31,7 @@ export interface TripCanvasProject {
   canvasRatio: CanvasRatio
   exportSize: ExportSize
   mapView: MapView
+  mapDetail: MapDetail
   places: Place[]
   routes: Route[]
   annotations: Annotation[]
