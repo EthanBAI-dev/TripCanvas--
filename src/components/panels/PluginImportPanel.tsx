@@ -59,11 +59,17 @@ export function PluginImportPanel() {
         const { payload } = parsePluginRouteImport(value)
         const places = createPlacesFromPluginPayload(payload)
         const routeResult = await calculateRoute(places, payload.travelMode)
+        const currentCarousel = useProjectStore.getState().project.carousel
 
         updateProject({
           title: payload.title ?? `${places[0].name}到${places.at(-1)?.name ?? ''}路线`,
           subtitle: payload.subtitle,
           city: payload.city,
+          carousel: {
+            ...currentCarousel,
+            hiddenPageIds: [...new Set([...currentCarousel.hiddenPageIds, 'cover'])],
+            pageOrder: ['route', ...places.map((place) => `place-${place.id}`)],
+          },
         })
         if (payload.canvasRatio) {
           setCanvasRatio(payload.canvasRatio)
