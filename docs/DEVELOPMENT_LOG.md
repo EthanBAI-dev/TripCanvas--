@@ -442,3 +442,18 @@
 
 - Google Maps URL 中的 `@lat,lng` 可能是镜头中心而非 POI 精确坐标，生产版应通过 Places API/Place ID 校验。
 - 外部图片若不允许 CORS，可能无法进入 html-to-image 导出；正式图片流程需要受控素材服务或图片代理。
+
+---
+
+## 2026-08-18 — 路径点排序
+
+**完成**
+
+- Side Panel 路径点卡片支持通过拖拽手柄重新排序。
+- 每张卡片提供上移、下移按钮，首尾状态自动禁用，键盘和不便拖拽时仍可操作。
+- 排序立即保存到扩展本地项目，并同步 Google Maps 预览摘要；发送后 Google Routes 途经顺序、编号和详情副图顺序保持一致。
+
+**验证**
+
+- 扩展脚本通过 Node 语法检查，Manifest 通过 JSON 解析。
+- `npm run lint` 与 `npm run build` 通过；保留现有包体积提示。

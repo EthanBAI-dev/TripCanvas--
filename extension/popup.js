@@ -49,12 +49,23 @@ function updatePlace(index, field, value) {
   void syncPreview()
 }
 
+function movePlace(fromIndex, toIndex) {
+  if (fromIndex === toIndex || toIndex < 0 || toIndex >= project.places.length) return
+  const [place] = project.places.splice(fromIndex, 1)
+  project.places.splice(toIndex, 0, place)
+  saveProject()
+  renderPlaces()
+  void syncPreview()
+  setStatus(`已将「${place.name}」调整为第 ${toIndex + 1} 站。`)
+}
+
 function renderPlaces() {
   const container = byId('places')
   container.replaceChildren()
   project.places.forEach((place, index) => {
     const item = document.createElement('li')
-    item.innerHTML = `<span>${index + 1}</span><div><input data-field="name" value="${escapeHtml(place.name)}" aria-label="地点名称" placeholder="地点名称"/><div class="coords"><input data-field="lat" value="${place.lat}" aria-label="纬度" placeholder="纬度"/><input data-field="lng" value="${place.lng}" aria-label="经度" placeholder="经度"/></div><div class="place-details"><textarea data-field="note" aria-label="地点说明" placeholder="攻略、停留时间或拍照提示">${escapeHtml(place.note)}</textarea><input data-field="imageUrl" value="${escapeHtml(place.imageUrl)}" aria-label="地点图片链接" placeholder="图片 URL（用于副图）"/></div></div><button class="remove" aria-label="删除 ${escapeHtml(place.name)}">×</button>`
+    item.dataset.index = String(index)
+    item.innerHTML = `<div class="stop-order"><button class="drag-handle" draggable="true" aria-label="拖拽调整 ${escapeHtml(place.name)} 的顺序" title="拖拽排序">⠿</button><span>${index + 1}</span></div><div><input data-field="name" value="${escapeHtml(place.name)}" aria-label="地点名称" placeholder="地点名称"/><div class="coords"><input data-field="lat" value="${place.lat}" aria-label="纬度" placeholder="纬度"/><input data-field="lng" value="${place.lng}" aria-label="经度" placeholder="经度"/></div><div class="place-details"><textarea data-field="note" aria-label="地点说明" placeholder="攻略、停留时间或拍照提示">${escapeHtml(place.note)}</textarea><input data-field="imageUrl" value="${escapeHtml(place.imageUrl)}" aria-label="地点图片链接" placeholder="图片 URL（用于副图）"/></div></div><div class="stop-actions"><button class="move-up" aria-label="上移 ${escapeHtml(place.name)}" title="上移" ${index === 0 ? 'disabled' : ''}>↑</button><button class="move-down" aria-label="下移 ${escapeHtml(place.name)}" title="下移" ${index === project.places.length - 1 ? 'disabled' : ''}>↓</button><button class="remove" aria-label="删除 ${escapeHtml(place.name)}" title="删除">×</button></div>`
     item.querySelectorAll('input, textarea').forEach((input) => input.addEventListener('input', () => {
       updatePlace(index, input.dataset.field, input.value)
     }))
@@ -63,6 +74,30 @@ function renderPlaces() {
       saveProject()
       renderPlaces()
       void syncPreview()
+    })
+    item.querySelector('.move-up').addEventListener('click', () => movePlace(index, index - 1))
+    item.querySelector('.move-down').addEventListener('click', () => movePlace(index, index + 1))
+    const dragHandle = item.querySelector('.drag-handle')
+    dragHandle.addEventListener('dragstart', (event) => {
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData('text/plain', String(index))
+      item.classList.add('dragging')
+    })
+    dragHandle.addEventListener('dragend', () => {
+      item.classList.remove('dragging')
+      container.querySelectorAll('.drag-over').forEach((candidate) => candidate.classList.remove('drag-over'))
+    })
+    item.addEventListener('dragover', (event) => {
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'move'
+      item.classList.add('drag-over')
+    })
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'))
+    item.addEventListener('drop', (event) => {
+      event.preventDefault()
+      const fromIndex = Number(event.dataTransfer.getData('text/plain'))
+      item.classList.remove('drag-over')
+      if (Number.isInteger(fromIndex)) movePlace(fromIndex, index)
     })
     container.append(item)
   })

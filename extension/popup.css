@@ -14,13 +14,22 @@ button, input, select { font: inherit; } button { cursor: pointer; }
 .section-title { display:flex; justify-content:space-between; align-items:center; margin-top:14px; }
 .text-button { border: 0; color:#0284c7; background: transparent; padding: 3px; font-size:12px; }
 ol { margin: 8px 0 14px; padding: 0; list-style: none; }
-li { display:grid; grid-template-columns: 23px 1fr 22px; gap:8px; align-items:start; margin-bottom:8px; padding:10px; border:1px solid #e6edf3; border-radius:12px; background:white; }
-li > span { display:grid; width:20px; height:20px; place-items:center; border-radius:50%; color:white; background:#fb7185; font-size:11px; font-weight:700; }
+li { display:grid; grid-template-columns: 24px 1fr 24px; gap:8px; align-items:start; margin-bottom:8px; padding:10px; border:1px solid #e6edf3; border-radius:12px; background:white; transition:border-color .15s, opacity .15s, transform .15s; }
+li.dragging { opacity:.45; }
+li.drag-over { border-color:#0284c7; transform:translateY(2px); }
+.stop-order { display:grid; justify-items:center; gap:5px; }
+.stop-order > span { display:grid; width:20px; height:20px; place-items:center; border-radius:50%; color:white; background:#fb7185; font-size:11px; font-weight:700; }
+.drag-handle { border:0; padding:0; color:#94a3b8; background:transparent; cursor:grab; font-size:18px; line-height:18px; }
+.drag-handle:active { cursor:grabbing; }
 li input { width: 100%; box-sizing: border-box; border:1px solid #d7e0e9; border-radius:6px; padding:5px; font-size:12px; }
 .coords { display:flex; gap:4px; margin-top:4px; } .coords input { min-width: 0; }
 .place-details { display:grid; gap:4px; margin-top:4px; }
 .place-details textarea { min-height:52px; resize:vertical; border:1px solid #d7e0e9; border-radius:6px; padding:6px; font:inherit; font-size:12px; }
-.remove { border:0; color:#94a3b8; background:transparent; font-size:18px; line-height: 20px; }
+.stop-actions { display:grid; gap:2px; }
+.stop-actions button { width:22px; height:22px; border:0; border-radius:6px; padding:0; color:#64748b; background:#f1f5f9; line-height:20px; }
+.stop-actions button:hover:not(:disabled) { color:#0369a1; background:#e0f2fe; }
+.stop-actions button:disabled { cursor:not-allowed; opacity:.3; }
+.stop-actions .remove { color:#e11d48; font-size:17px; }
 label { display:block; margin:10px 0; font-size:12px; font-weight:600; }
 label input, label select { display:block; width:100%; box-sizing:border-box; margin-top:5px; border:1px solid #d7e0e9; border-radius:8px; padding:8px; background:white; font-weight:400; }
 label textarea { display:block; width:100%; min-height:62px; box-sizing:border-box; margin-top:5px; border:1px solid #d7e0e9; border-radius:8px; padding:8px; resize:vertical; font:inherit; font-weight:400; }
