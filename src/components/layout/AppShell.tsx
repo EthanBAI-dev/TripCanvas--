@@ -3,6 +3,7 @@ import { LeftPanel } from './LeftPanel.tsx'
 import { RightPanel } from './RightPanel.tsx'
 import { TopBar } from './TopBar.tsx'
 import { CarouselExportFrames } from '../carousel/CarouselExportFrames.tsx'
+import { ExtensionBridge } from '../extension/ExtensionBridge.tsx'
 
 export function AppShell() {
   return (
@@ -14,6 +15,7 @@ export function AppShell() {
         <RightPanel />
       </main>
       <CarouselExportFrames />
+      <ExtensionBridge />
     </div>
   )
 }

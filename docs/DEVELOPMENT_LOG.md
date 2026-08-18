@@ -457,3 +457,23 @@
 
 - 扩展脚本通过 Node 语法检查，Manifest 通过 JSON 解析。
 - `npm run lint` 与 `npm run build` 通过；保留现有包体积提示。
+
+---
+
+## 2026-08-18 — Side Panel 精确地点搜索
+
+**完成**
+
+- 使用 Maps JavaScript Places Library 的新 `Place.searchByText()` 接口，限定请求名称、地址、Place ID、坐标和 Google Maps 链接字段。
+- Side Panel 新增地点搜索与最多五个候选结果；用户确认候选后才将精确坐标加入路径点，并阻止同一 Place ID 重复加入。
+- 扩展通过本地 TripCanvas 页面调用 Places，API Key 不写入扩展包；请求与返回均使用带 request ID 和超时的消息桥接。
+- 部署文档增加 Places API（New）的启用、Key 限制和上线验证要求。
+
+**验证**
+
+- 扩展脚本通过 Node 语法检查，TypeScript 与生产构建通过。
+- 浏览器回归确认 TripCanvas 地图、Google 路线、地点图片字段和导出界面正常加载。
+
+**待验证**
+
+- 当前 Google Key 需要额外启用并允许 Places API（New），完成后再验证真实候选响应。

@@ -68,7 +68,7 @@ npm run dev
 
 复制 `.env.example` 为 `.env.local`，只在本地配置第三方服务密钥或服务端点。默认地点使用 mock、底图使用 MapLibre、路线使用 straight，不要求密钥。
 
-Google 模式需要在同一 Google Cloud 项目中启用 Maps JavaScript API、Routes API 和 Maps Static API，并配置受 HTTP Referrer 限制的 Key：
+Google 模式需要在同一 Google Cloud 项目中启用 Maps JavaScript API、Routes API、Maps Static API 和 Places API (New)，并配置受 HTTP Referrer 限制的 Key：
 
 ```dotenv
 VITE_GOOGLE_MAPS_API_KEY=your_restricted_key
@@ -95,5 +95,5 @@ Google Routes 与 Google 底图必须成套启用。编辑器使用 Google 地�
 - 使用 Carto 公共底图作为开发底图；上线前须确认稳定性、配额、归属与导出场景的适用性。
 - 地图编辑器与 html-to-image 的导出依赖浏览器 WebGL/CORS 能力；部分设备或底图资源可能导致导出失败。
 - 默认仍使用本地 mock 地点；生产环境的真实地点搜索服务需要按目标地区、成本和配额另行选择及配置。
-- Google 模式需要启用计费和三个 API；真实联调已通过，但仓库不包含 Key，部署时必须依照 [部署文档](docs/DEPLOYMENT.md) 设置受限环境变量。
+- Google 模式需要启用计费和四个 API；地图、路线和静态导出已真实联调，Places API（New）仍待 Key 放行后回归。仓库不包含 Key，部署时必须依照 [部署文档](docs/DEPLOYMENT.md) 设置受限环境变量。
 - 站点详情页目前以文字信息为主，尚未支持用户上传照片或为每站配置独立图片。

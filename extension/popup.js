@@ -28,6 +28,65 @@ async function getGoogleMapsTab() {
   return tabs[0]
 }
 
+async function getTripCanvasTab() {
+  const tabs = await chrome.tabs.query({ url: ['http://127.0.0.1:5174/*', 'http://localhost:5174/*'] })
+  return tabs[0]
+}
+
+function renderCandidates(candidates) {
+  const container = byId('place-candidates')
+  container.replaceChildren()
+  candidates.forEach((candidate) => {
+    const item = document.createElement('div')
+    item.className = 'candidate'
+    item.innerHTML = `<div><strong>${escapeHtml(candidate.name)}</strong><small>${escapeHtml(candidate.address || '地址未提供')}</small></div><button type="button">添加</button>`
+    item.querySelector('button').addEventListener('click', () => {
+      if (project.places.some((place) => place.googlePlaceId === candidate.id)) {
+        setStatus(`「${candidate.name}」已经在路线中。`, true)
+        return
+      }
+      project.places.push({
+        name: candidate.name,
+        address: candidate.address,
+        lat: candidate.lat,
+        lng: candidate.lng,
+        externalUrl: candidate.externalUrl,
+        googlePlaceId: candidate.id,
+        note: '',
+        imageUrl: '',
+      })
+      saveProject()
+      renderPlaces()
+      void syncPreview()
+      setStatus(`已加入精确地点「${candidate.name}」。`)
+    })
+    container.append(item)
+  })
+}
+
+async function searchPlaces() {
+  const query = byId('place-query').value.trim()
+  if (!query) { setStatus('请输入要搜索的地点名称。', true); return }
+  const tab = await getTripCanvasTab()
+  if (!tab?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
+
+  const button = byId('search-place')
+  button.disabled = true
+  button.textContent = '搜索中'
+  setStatus('正在通过 Google Places 查找候选地点…')
+  const response = await chrome.tabs.sendMessage(tab.id, { type: 'TRIPCANVAS_SEARCH_PLACES', query }).catch(() => null)
+  button.disabled = false
+  button.textContent = '搜索'
+
+  if (!response || response.error) {
+    renderCandidates([])
+    setStatus(response?.error ?? '地点搜索失败，请刷新 TripCanvas 后重试。', true)
+    return
+  }
+  renderCandidates(response.candidates ?? [])
+  setStatus(response.candidates?.length ? `找到 ${response.candidates.length} 个候选，请选择。` : '没有找到匹配地点。', !response.candidates?.length)
+}
+
 async function syncPreview() {
   const tab = await getGoogleMapsTab()
   if (!tab?.id) return
@@ -122,6 +181,11 @@ byId('capture').addEventListener('click', async () => {
   saveProject(); renderPlaces(); await syncPreview(); setStatus(`已加入「${response.place.name}」。`)
 })
 
+byId('search-place').addEventListener('click', () => void searchPlaces())
+byId('place-query').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') void searchPlaces()
+})
+
 byId('clear').addEventListener('click', () => {
   project.places = []; saveProject(); renderPlaces(); void syncPreview(); setStatus('已清空路径点。')
 })
@@ -141,8 +205,8 @@ byId('send').addEventListener('click', async () => {
   if (project.places.some((place) => !place.name || !Number.isFinite(place.lat) || !Number.isFinite(place.lng))) {
     setStatus('请补全每个地点的名称和有效坐标。', true); return
   }
-  const targets = await chrome.tabs.query({ url: ['http://127.0.0.1:5174/*', 'http://localhost:5174/*'] })
-  if (!targets[0]?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
+  const target = await getTripCanvasTab()
+  if (!target?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
   const payload = { type: 'TRIPCANVAS_IMPORT_ROUTE', payload: {
     title: project.title.trim() || undefined,
     subtitle: project.subtitle.trim() || undefined,
@@ -154,7 +218,7 @@ byId('send').addEventListener('click', async () => {
       note: place.note?.trim() || undefined,
     })),
   } }
-  const response = await chrome.tabs.sendMessage(targets[0].id, { type: 'TRIPCANVAS_DELIVER_ROUTE', payload }).catch(() => null)
+  const response = await chrome.tabs.sendMessage(target.id, { type: 'TRIPCANVAS_DELIVER_ROUTE', payload }).catch(() => null)
   if (!response?.ok) { setStatus('发送失败，请刷新 TripCanvas 页面后重试。', true); return }
   setStatus(`已生成 1 张路线主图和 ${project.places.length} 张地点副图。`)
 })

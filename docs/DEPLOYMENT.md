@@ -25,12 +25,13 @@ VITE_ROUTING_PROVIDER=google
    - Maps JavaScript API
    - Routes API
    - Maps Static API
+   - Places API (New)
 3. 在 **Credentials → API key → Application restrictions** 选择 **Websites**。
 4. 添加允许的 HTTP Referrer：
    - 本地开发：`http://127.0.0.1:5174/*`
    - 如使用 localhost：`http://localhost:5174/*`
    - 生产环境：`https://你的正式域名/*`
-5. 在 **API restrictions** 选择 **Restrict key**，且仅勾选上面的三个 API。
+5. 在 **API restrictions** 选择 **Restrict key**，且仅勾选上面的四个 API。
 
 请不要为了排障长期保留“无应用限制”或“不要限制 Key”。如确实需要临时测试，应立即恢复限制。
 
@@ -39,6 +40,7 @@ VITE_ROUTING_PROVIDER=google
 部署完成后，用受限 Key 在正式域名逐项检查：
 
 - Google 地图可以加载，且保留 Google 官方归属。
+- Side Panel 搜索地点时，Places API（New）能返回名称、地址、Place ID 和精确坐标候选。
 - 导入至少两个地点后，Google Routes 能返回道路路线、总距离、总时间和逐段 ETA。
 - 导出的 PNG 包含 Static Maps 底图、路线、站点编号、标签与逐段时间。
 - Chrome 扩展的 `manifest.json` 已加入正式 TripCanvas 域名，再重新加载扩展。

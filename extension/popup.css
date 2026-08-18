@@ -12,6 +12,17 @@ button, input, select { font: inherit; } button { cursor: pointer; }
 .hero { padding:12px; margin-bottom:12px; border:1px solid #dbe7ef; border-radius:14px; background:white; }
 .two-columns { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .section-title { display:flex; justify-content:space-between; align-items:center; margin-top:14px; }
+.section-title small { color:#94a3b8; font-size:10px; }
+.place-search { margin:12px 0; padding:12px; border:1px solid #dbe7ef; border-radius:14px; background:white; }
+.place-search .section-title { margin-top:0; }
+.search-row { display:grid; grid-template-columns:1fr 72px; gap:6px; margin-top:9px; }
+.search-row input { min-width:0; border:1px solid #d7e0e9; border-radius:8px; padding:8px; }
+.search-row .soft { padding:8px; }
+.candidate { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; margin-top:7px; padding:8px; border:1px solid #e6edf3; border-radius:9px; background:#f8fafc; }
+.candidate strong, .candidate small { display:block; }
+.candidate strong { font-size:12px; }
+.candidate small { margin-top:3px; color:#64748b; font-size:10px; line-height:1.35; }
+.candidate button { border:0; border-radius:7px; padding:6px 8px; color:#0369a1; background:#e0f2fe; font-size:11px; font-weight:700; }
 .text-button { border: 0; color:#0284c7; background: transparent; padding: 3px; font-size:12px; }
 ol { margin: 8px 0 14px; padding: 0; list-style: none; }
 li { display:grid; grid-template-columns: 24px 1fr 24px; gap:8px; align-items:start; margin-bottom:8px; padding:10px; border:1px solid #e6edf3; border-radius:12px; background:white; transition:border-color .15s, opacity .15s, transform .15s; }

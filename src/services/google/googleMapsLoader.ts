@@ -29,3 +29,8 @@ export async function loadGoogleRoutesLibrary(): Promise<google.maps.RoutesLibra
   assertGoogleMapsConfigured()
   return importLibrary('routes') as Promise<google.maps.RoutesLibrary>
 }
+
+export async function loadGooglePlacesLibrary(): Promise<google.maps.PlacesLibrary> {
+  assertGoogleMapsConfigured()
+  return importLibrary('places') as Promise<google.maps.PlacesLibrary>
+}

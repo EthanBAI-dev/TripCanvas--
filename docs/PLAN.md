@@ -213,6 +213,7 @@ MapLibre 负责地理底图和视图状态；Konva 负责可选择、可拖拽�
 - AI 生成地点名称后必须经过 Google Places 搜索和候选确认，再获得坐标与图片。
 - 地点图片进入统一素材结构，支持用户选择、替换和删除；处理 CORS、归属和导出稳定性。
 - [x] Side Panel 支持路径点拖拽排序，并提供键盘可操作的上移/下移按钮。
+- [x] Side Panel 通过 Web App 的 Google Key 调用 Places Text Search，并显示精确地点候选；候选确认后才写入路径点。
 - [ ] 把地图预览升级为路线 geometry 的真实构图预览。
 
 ## 第一轮实现顺序

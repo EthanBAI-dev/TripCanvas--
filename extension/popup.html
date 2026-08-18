@@ -20,6 +20,15 @@
         <button id="ai-plan" class="soft" type="button">规划为路径点</button>
         <p class="hint">AI 只会增删和调整下面的路径点；当前先保留接口，接入模型后不会改变编辑方式。</p>
       </section>
+      <section class="place-search">
+        <div class="section-title"><strong>精确搜索地点</strong><small>Google Places</small></div>
+        <div class="search-row">
+          <input id="place-query" aria-label="搜索地点" placeholder="输入店名、景点或地址" />
+          <button id="search-place" class="soft" type="button">搜索</button>
+        </div>
+        <div id="place-candidates"></div>
+        <p class="hint">从候选中确认后会保存精确坐标、地址和 Place ID；需要先打开本地 TripCanvas。</p>
+      </section>
       <button id="capture" class="primary">＋ 添加当前 Google Maps 地点</button>
       <p id="capture-hint" class="hint">打开一个地点详情后添加。地图上的预览框会同步标题、比例和站点摘要。</p>
       <section>
