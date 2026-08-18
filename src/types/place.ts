@@ -20,6 +20,7 @@ export interface Place extends LngLat {
   address?: string
   category: PlaceCategory
   note?: string
+  imageUrl?: string
   externalUrl?: string
   googlePlaceId?: string
   source?: PlaceSource

@@ -3,21 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TripCanvas 导入</title>
+    <title>TripCanvas 创作台</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main>
-      <header><span>旅</span><div><strong>TripCanvas</strong><small>Google Maps 路线导入</small></div></header>
-      <button id="capture" class="primary">捕获当前 Google Maps 地点</button>
-      <p id="capture-hint" class="hint">在 Google Maps 打开地点详情页后点击捕获。坐标取自链接，发送前可编辑核对。</p>
+      <header><span>旅</span><div><strong>TripCanvas</strong><small>地图侧边创作台</small></div></header>
+      <section class="hero">
+        <label>主图标题 <input id="title" placeholder="例如：涩谷咖啡 City Walk" /></label>
+        <label>副标题 <input id="subtitle" placeholder="例如：半日散步与咖啡路线" /></label>
+        <div class="two-columns">
+          <label>出行方式 <select id="travel-mode"><option value="walking">步行</option><option value="driving">驾车</option></select></label>
+          <label>画面比例 <select id="canvas-ratio"><option value="3:4">3:4</option><option value="4:5">4:5</option><option value="9:16">9:16</option></select></label>
+        </div>
+        <label>AI 路线想法 <textarea id="ai-prompt" placeholder="例如：涩谷到表参道，咖啡、拍照、买手店，不想走太远"></textarea></label>
+        <button id="ai-plan" class="soft" type="button">规划为路径点</button>
+        <p class="hint">AI 只会增删和调整下面的路径点；当前先保留接口，接入模型后不会改变编辑方式。</p>
+      </section>
+      <button id="capture" class="primary">＋ 添加当前 Google Maps 地点</button>
+      <p id="capture-hint" class="hint">打开一个地点详情后添加。地图上的预览框会同步标题、比例和站点摘要。</p>
       <section>
         <div class="section-title"><strong>路线地点</strong><button id="clear" class="text-button">清空</button></div>
         <ol id="places"></ol>
       </section>
-      <label>路线标题 <input id="title" placeholder="例如：涩谷咖啡 City Walk" /></label>
-      <label>出行方式 <select id="travel-mode"><option value="walking">步行</option><option value="driving">驾车</option></select></label>
-      <button id="send" class="primary">发送到 TripCanvas</button>
+      <div class="sticky-actions">
+        <button id="toggle-preview" class="soft" type="button">隐藏地图预览框</button>
+        <button id="send" class="primary">生成高清主图与副图</button>
+      </div>
       <p id="status" role="status"></p>
     </main>
     <script src="popup.js"></script>

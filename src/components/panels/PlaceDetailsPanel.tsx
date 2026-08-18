@@ -115,6 +115,17 @@ export function PlaceDetailsPanel() {
               value={selectedPlace.externalUrl ?? ''}
             />
           </label>
+          <label className="block text-xs font-medium text-ink-muted" htmlFor="place-detail-image">
+            副图图片链接
+            <input
+              className={fieldClassName}
+              id="place-detail-image"
+              onChange={(event) => updatePlace(selectedPlace.id, { imageUrl: event.target.value })}
+              placeholder="https://example.com/photo.jpg"
+              type="url"
+              value={selectedPlace.imageUrl ?? ''}
+            />
+          </label>
           {safeExternalUrl ? (
             <a
               className="inline-flex text-xs font-medium text-coral-dark underline-offset-4 hover:underline"

@@ -4,6 +4,7 @@ import { useProjectStore } from '../../store/projectStore.ts'
 import type { CarouselPage } from '../../types/carousel.ts'
 import type { CanvasRatio, TripCanvasProject } from '../../types/project.ts'
 import { WatermarkOverlay } from './WatermarkOverlay.tsx'
+import { getSafeExternalUrl } from '../../utils/url.ts'
 
 const FRAME_WIDTH = 360
 const FRAME_HEIGHTS: Record<CanvasRatio, number> = {
@@ -90,6 +91,7 @@ function PlacePage({ page, project }: { page: CarouselPage; project: TripCanvasP
   }
 
   const placeNumber = (page.placeIndex ?? 0) + 1
+  const safeImageUrl = getSafeExternalUrl(place.imageUrl)
   const hasTopWatermark = project.carousel.watermark.enabled && project.carousel.watermark.position.startsWith('top-')
 
   return (
@@ -120,6 +122,17 @@ function PlacePage({ page, project }: { page: CarouselPage; project: TripCanvasP
         <h2 className="mt-6 max-w-[12ch] text-4xl font-bold leading-tight tracking-tight">{place.name}</h2>
         {place.address ? <p className="mt-3 text-xs leading-5 opacity-60">{place.address}</p> : null}
       </div>
+      {safeImageUrl ? (
+        <div className="relative mt-5 h-40 overflow-hidden rounded-2xl border border-white/70 bg-white/55 shadow-sm">
+          <img
+            alt={place.name}
+            className="size-full object-cover"
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
+            src={safeImageUrl}
+          />
+        </div>
+      ) : null}
       <div className="relative mt-auto rounded-2xl border border-white/70 bg-white/62 p-5 backdrop-blur">
         <p className="text-[9px] font-bold tracking-[0.18em] opacity-45">TRIP NOTE</p>
         <p className="mt-3 text-sm font-medium leading-6">

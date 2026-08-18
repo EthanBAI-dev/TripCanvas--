@@ -46,6 +46,7 @@ export function PluginImportPanel() {
   const [message, setMessage] = useState<string | null>(null)
   const updateProject = useProjectStore((state) => state.updateProject)
   const setGeneratedMapContent = useProjectStore((state) => state.setGeneratedMapContent)
+  const setCanvasRatio = useProjectStore((state) => state.setCanvasRatio)
   const requestFitBounds = useEditorStore((state) => state.requestFitBounds)
   const setSelectedId = useEditorStore((state) => state.setSelectedId)
 
@@ -61,8 +62,12 @@ export function PluginImportPanel() {
 
         updateProject({
           title: payload.title ?? `${places[0].name}到${places.at(-1)?.name ?? ''}路线`,
+          subtitle: payload.subtitle,
           city: payload.city,
         })
+        if (payload.canvasRatio) {
+          setCanvasRatio(payload.canvasRatio)
+        }
         setGeneratedMapContent({
           places,
           route: routeResult.route,
@@ -81,7 +86,7 @@ export function PluginImportPanel() {
         setMessage(error instanceof Error ? error.message : '插件路线导入失败。')
       }
     },
-    [requestFitBounds, setGeneratedMapContent, setSelectedId, updateProject],
+    [requestFitBounds, setCanvasRatio, setGeneratedMapContent, setSelectedId, updateProject],
   )
 
   useEffect(() => {

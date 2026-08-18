@@ -418,3 +418,26 @@
 **验证**
 
 - `npm run lint` 与 `npm run build` 通过；保留现有包体积提示。
+
+---
+
+## 2026-08-18 — Side Panel 创作架构
+
+**完成**
+
+- Chrome 扩展由 Action Popup 改为常驻 Side Panel，扩展图标直接打开侧边创作台。
+- 侧边栏统一保存标题、副标题、画幅、出行方式和模块化路径点；每点支持说明、图片 URL、坐标编辑与删除。
+- Google Maps 内容脚本新增画幅预览框，实时同步 3:4、4:5、9:16 构图、标题和路径点摘要。
+- 插件导入契约新增 `subtitle`、`canvasRatio` 和 `imageUrl`，地点图片与说明进入 Project JSON。
+- 地点详情副图支持显示远程图片；主路线图继续只突出地图、路线与路径点。
+- AI 入口明确复用路径点数组，当前未连接真实模型，不返回虚假的规划结果。
+
+**验证**
+
+- Manifest 可解析，Side Panel service worker 和全部扩展脚本通过 Node 语法检查。
+- `npm run lint` 与 `npm run build` 通过；保留现有包体积提示。
+
+**后续风险**
+
+- Google Maps URL 中的 `@lat,lng` 可能是镜头中心而非 POI 精确坐标，生产版应通过 Places API/Place ID 校验。
+- 外部图片若不允许 CORS，可能无法进入 html-to-image 导出；正式图片流程需要受控素材服务或图片代理。

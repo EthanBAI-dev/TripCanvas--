@@ -4,7 +4,7 @@
 
 TripCanvas（中文名“旅图”）是一个 AI 驱动的旅行路线图生成工具：将地点列表或旅行想法转化为可分享的小红书风格路线图。
 
-当前优先目标是推进 Web App v0.4：站点详情、页面编排、水印和插件导入契约已完成；下一阶段使用项目所有者配置的 Google API Key 验证 Maps JavaScript API、Routes Library 与 Static Maps 导出，再封装 Chrome 扩展。暂不做账户系统。
+当前优先目标是推进 Chrome Side Panel 创作体验：Google Maps 作为地图上下文，侧边栏统一管理标题、路径点、说明和图片，地图内画幅框负责构图预览，Web App 负责 Project JSON、真实路线和高清主图/副图导出。下一阶段让真实 AI 通过同一份路径点列表执行增删改。暂不做账户系统。
 
 ## Tech Stack
 

@@ -25,6 +25,10 @@ const placeSchema = z.object({
   address: z.string().trim().optional(),
   category: categorySchema.optional(),
   note: z.string().trim().optional(),
+  imageUrl: z
+    .url()
+    .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), '图片仅支持 http/https 链接')
+    .optional(),
   lat: z.number().finite().min(-90).max(90),
   lng: z.number().finite().min(-180).max(180),
   externalUrl: z
@@ -36,7 +40,9 @@ const placeSchema = z.object({
 
 const payloadSchema = z.object({
   title: z.string().trim().min(1).optional(),
+  subtitle: z.string().trim().min(1).optional(),
   city: z.string().trim().min(1).optional(),
+  canvasRatio: z.enum(['3:4', '4:5', '9:16']).optional(),
   travelMode: z.enum(['walking', 'driving']).default('walking'),
   places: z.array(placeSchema).min(2).max(27),
 })
