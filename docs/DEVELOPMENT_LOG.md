@@ -611,3 +611,30 @@
 
 - 用户在对话中提供的 Key 已视为暴露，未写入仓库或本地文件；需要在 DeepSeek 控制台轮换后再进行真实计费请求测试。
 - 当前服务端中间件用于本地开发；上线到纯静态托管时仍需迁移成相应平台的 Serverless Function。
+
+---
+
+## 2026-08-18 — Side Panel 脱离 Web App 标签页
+
+**问题**
+
+- 旧版地点搜索、AI 和路线请求通过本地 TripCanvas 网页的 content script 转发，导致用户必须额外打开 Web App 标签页，不符合插件独立创作体验。
+
+**完成**
+
+- Side Panel 改为直接请求 TripCanvas API 服务，不再为地点搜索、AI 规划或路线计算查找 Web App 标签页。
+- 新增服务端 Places API（New）Text Search：返回 Place ID、名称、地址、坐标、Google Maps 链接、首张照片及作者归属。
+- 新增服务端 Routes REST 适配：按每一站的步行/驾车方式计算分段路线，解码 polyline 并汇总距离与时间。
+- 新增组合 AI 接口：DeepSeek 草案 → Google Places 校准 → Google Routes 路线，在服务端完成后一次性返回插件。
+- “生成高清主图与副图”改名为“发送到高级编辑器（可选）”；只有该可选动作仍需要 Web App。
+
+**安全**
+
+- 扩展包不包含第三方 Key。独立插件 API 使用无 `VITE_` 前缀的 `DEEPSEEK_API_KEY` 与 `GOOGLE_MAPS_API_KEY`。
+- 本地 API 地址为 `127.0.0.1:5174`；发布时必须替换成 HTTPS 服务并设置最小化的扩展 host permission。
+
+**验证**
+
+- TypeScript 检查、生产构建、扩展脚本语法和 Manifest JSON 解析通过。
+- API 预检端点返回 204；缺少 DeepSeek 服务端 Key 时组合规划端点返回明确 503。
+- 仓库密钥模式扫描通过；现有前端仍保留大包体积提示。

@@ -10,11 +10,14 @@
 VITE_GOOGLE_MAPS_API_KEY=your_restricted_key
 VITE_MAP_PROVIDER=google
 VITE_ROUTING_PROVIDER=google
+GOOGLE_MAPS_API_KEY=your_server_restricted_key
 ```
 
 本地开发时，将同样的变量放入未提交的 `.env.local`。`.env.local` 已在 `.gitignore` 中，禁止手动添加到 Git。
 
 注意：`VITE_` 前缀变量会被打包到浏览器端。这是 Google Maps JavaScript API 的正常接入方式，因此 Key 的安全性依赖 Google Cloud Console 的应用和 API 限制，而不是隐藏在前端代码中。
+
+Chrome 扩展调用的 Places Web Service 和 Routes REST 使用单独的 `GOOGLE_MAPS_API_KEY`。该 Key 没有 `VITE_` 前缀，只存在于 API 服务端；生产环境应按服务器出口 IP 限制，并只允许 Places API（New）和 Routes API。
 
 ## Google Cloud Console 配置
 
@@ -66,3 +69,13 @@ VITE_ROUTING_PROVIDER=google
 - The AI endpoint proposes names, order, travel modes, and short notes. Google Places remains the source of Place IDs, coordinates, photos, and attributions; Google Routes remains the source of geometry and travel time.
 - Google Places photo URIs must be refreshed and must not be treated as permanently cacheable media.
 - 任何曾出现在聊天、截图、Issue 或日志里的 DeepSeek Key 都必须重新生成并停用旧值，不能继续作为生产密钥。
+
+## 独立 Chrome 扩展 API
+
+Side Panel 不再把 Web App 标签页当作 API 代理。开发版直接调用：
+
+- `POST /api/google/places/search`
+- `POST /api/google/routes/calculate`
+- `POST /api/ai/plan-resolved-route`
+
+发布时需把这些接口部署在 HTTPS 域名，将 `extension/popup.js` 的 `apiBaseUrl` 改成正式地址，并在 `extension/manifest.json` 的 `host_permissions` 加入该域名。Web App 标签页只在用户主动选择“发送到高级编辑器”时需要打开。

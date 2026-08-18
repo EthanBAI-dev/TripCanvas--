@@ -1,4 +1,5 @@
 const storageKey = 'tripcanvas-extension-project'
+const apiBaseUrl = 'http://127.0.0.1:5174'
 const project = {
   title: '', subtitle: '', travelMode: 'walking', canvasRatio: '3:4', previewVisible: true,
   places: [], routeGeometry: [], routeSegments: [], routeSummary: null,
@@ -20,6 +21,18 @@ function escapeHtml(value) {
 
 function saveProject() {
   chrome.storage.local.set({ [storageKey]: project })
+}
+
+async function requestApi(path, body, timeoutMs = 30_000) {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload.error || `TripCanvas API 请求失败（${response.status}）。`)
+  return payload
 }
 
 async function getGoogleMapsTab() {
@@ -126,14 +139,17 @@ function renderCandidates(candidates) {
 async function searchPlaces() {
   const query = byId('place-query').value.trim()
   if (!query) { setStatus('请输入要搜索的地点名称。', true); return }
-  const tab = await getTripCanvasTab()
-  if (!tab?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
 
   const button = byId('search-place')
   button.disabled = true
   button.textContent = '搜索中'
   setStatus('正在通过 Google Places 查找候选地点…')
-  const response = await chrome.tabs.sendMessage(tab.id, { type: 'TRIPCANVAS_SEARCH_PLACES', query }).catch(() => null)
+  const locationBias = project.places.length
+    ? { lat: project.places.at(-1).lat, lng: project.places.at(-1).lng }
+    : undefined
+  const response = await requestApi('/api/google/places/search', { query, locationBias }).catch((error) => ({
+    error: error instanceof Error ? error.message : '地点搜索失败。',
+  }))
   button.disabled = false
   button.textContent = '搜索'
 
@@ -289,17 +305,14 @@ byId('clear').addEventListener('click', () => {
 
 byId('update-route-preview').addEventListener('click', async () => {
   if (project.places.length < 2) { setStatus('请至少添加 2 个路径点。', true); return }
-  const target = await getTripCanvasTab()
-  if (!target?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
 
   const button = byId('update-route-preview')
   button.disabled = true
   button.textContent = '正在计算路线…'
-  const response = await chrome.tabs.sendMessage(target.id, {
-    type: 'TRIPCANVAS_CALCULATE_PREVIEW_ROUTE',
+  const response = await requestApi('/api/google/routes/calculate', {
     travelMode: getRouteModes()[0] ?? 'walking',
     places: project.places.map(({ name, lat, lng, arrivalMode }) => ({ name, lat, lng, arrivalMode })),
-  }).catch(() => null)
+  }).catch((error) => ({ error: error instanceof Error ? error.message : '路线预览计算失败。' }))
   button.disabled = false
   button.textContent = '更新真实路线预览'
 
@@ -335,17 +348,13 @@ byId('toggle-preview').addEventListener('click', () => {
 byId('ai-plan').addEventListener('click', async () => {
   const prompt = byId('ai-prompt').value.trim()
   if (prompt.length < 4) { setStatus('请先写下路线想法。', true); return }
-  const target = await getTripCanvasTab()
-  if (!target?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
-
   const button = byId('ai-plan')
   button.disabled = true
   button.textContent = 'AI 正在规划并核对地点…'
   setStatus('AI 正在生成站点与简洁说明，随后会调用 Google Places 和 Routes。')
-  const response = await chrome.tabs.sendMessage(target.id, {
-    type: 'TRIPCANVAS_PLAN_AI_ROUTE',
+  const response = await requestApi('/api/ai/plan-resolved-route', {
     prompt,
-  }).catch(() => null)
+  }, 90_000).catch((error) => ({ error: error instanceof Error ? error.message : 'AI 路线规划失败。' }))
   button.disabled = false
   button.textContent = '规划为路径点'
 
@@ -394,7 +403,10 @@ byId('send').addEventListener('click', async () => {
     setStatus('请补全每个地点的名称和有效坐标。', true); return
   }
   const target = await getTripCanvasTab()
-  if (!target?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
+  if (!target?.id) {
+    setStatus('高级编辑器尚未打开；地点搜索、AI 规划和地图预览仍可独立使用。', true)
+    return
+  }
   const payload = { type: 'TRIPCANVAS_IMPORT_ROUTE', payload: {
     title: project.title.trim() || undefined,
     subtitle: project.subtitle.trim() || undefined,

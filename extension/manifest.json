@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "TripCanvas Route Importer",
-  "description": "Capture Google Maps places and send a multi-stop route to TripCanvas.",
-  "version": "0.2.0",
+  "description": "Plan and edit multi-stop travel routes beside Google Maps.",
+  "version": "0.3.0",
   "action": {
     "default_title": "打开旅图 TripCanvas 侧边栏"
   },
