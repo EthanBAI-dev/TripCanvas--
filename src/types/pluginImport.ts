@@ -10,6 +10,7 @@ export interface PluginPlaceInput {
   category?: PlaceCategory
   note?: string
   imageUrl?: string
+  arrivalMode?: RoutableTravelMode
   lat: number
   lng: number
   externalUrl?: string

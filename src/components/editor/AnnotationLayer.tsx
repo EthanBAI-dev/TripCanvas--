@@ -37,7 +37,8 @@ function LegTimeOverlay({ map, route }: { map: CanvasMapController; route: Route
           }
         : leg.geometry[middleIndex]
     const point = lngLatToScreen(map, middle)
-    const text = `${Math.max(1, Math.round(leg.durationSeconds / 60))} 分钟`
+    const modeText = leg.travelMode === 'driving' ? '驾车' : leg.travelMode === 'walking' ? '步行' : ''
+    const text = `${modeText ? `${modeText} · ` : ''}${Math.max(1, Math.round(leg.durationSeconds / 60))} 分钟`
     const width = Math.max(58, text.length * 12 + 18)
 
     return (
@@ -70,10 +71,36 @@ function LegTimeOverlay({ map, route }: { map: CanvasMapController; route: Route
 }
 
 function RouteOverlay({ map, route }: { map: CanvasMapController; route: Route }) {
-  const points = route.geometry.flatMap((coordinate) => {
+  const toPoints = (geometry: Route['geometry']) => geometry.flatMap((coordinate) => {
     const screenPoint = lngLatToScreen(map, coordinate)
     return [screenPoint.x, screenPoint.y]
   })
+  const legModes = new Set(route.legs.map((leg) => leg.travelMode).filter(Boolean))
+
+  if (legModes.size > 1) {
+    return (
+      <Group>
+        {route.legs.map((leg) => {
+          const color = leg.travelMode === 'driving' ? '#0f766e' : '#0284c7'
+          const segmentProps = {
+            dash: leg.travelMode === 'walking' ? [10, 6] : undefined,
+            lineCap: 'round' as const,
+            lineJoin: 'round' as const,
+            points: toPoints(leg.geometry),
+            stroke: color,
+            strokeWidth: route.style.width,
+          }
+          return route.style.showArrow ? (
+            <Arrow {...segmentProps} fill={color} key={leg.id} pointerLength={10} pointerWidth={10} />
+          ) : (
+            <Line {...segmentProps} key={leg.id} />
+          )
+        })}
+      </Group>
+    )
+  }
+
+  const points = toPoints(route.geometry)
 
   const commonProps = {
     dash: route.style.dashed ? [10, 8] : undefined,

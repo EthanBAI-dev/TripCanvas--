@@ -4,7 +4,7 @@ import {
   parsePluginRouteImport,
 } from '../../services/import/parsePluginRouteImport.ts'
 import { createPlaceAnnotations } from '../../services/project/createPlaceAnnotations.ts'
-import { calculateRoute } from '../../services/routing/calculateRoute.ts'
+import { calculateMixedRoute } from '../../services/routing/calculateMixedRoute.ts'
 import { useEditorStore } from '../../store/editorStore.ts'
 import { useProjectStore } from '../../store/projectStore.ts'
 import { PLUGIN_ROUTE_IMPORT_TYPE } from '../../types/pluginImport.ts'
@@ -58,7 +58,7 @@ export function PluginImportPanel() {
       try {
         const { payload } = parsePluginRouteImport(value)
         const places = createPlacesFromPluginPayload(payload)
-        const routeResult = await calculateRoute(places, payload.travelMode)
+        const routeResult = await calculateMixedRoute(places, payload.travelMode)
         const currentCarousel = useProjectStore.getState().project.carousel
 
         updateProject({

@@ -19,6 +19,7 @@ interface TripCanvasImportMessage {
       category?: 'start' | 'end' | 'food' | 'coffee' | 'shopping' | 'photo' | 'hotel' | 'sight' | 'transport' | 'custom'
       note?: string
       imageUrl?: string
+      arrivalMode?: 'walking' | 'driving'
       lat: number
       lng: number
       externalUrl?: string
@@ -28,7 +29,7 @@ interface TripCanvasImportMessage {
 }
 ```
 
-`places` 至少 2 个、最多 27 个，对应起点、最多 25 个中途停靠点和终点。`externalUrl` 与 `imageUrl` 只接受 `http`/`https`。图片服务器需要允许跨域读取，否则浏览器可预览但 PNG 导出可能无法嵌入。若只传 `googlePlaceId`，TripCanvas 会生成标准 Google Maps Search 链接。
+`places` 至少 2 个、最多 27 个，对应起点、最多 25 个中途停靠点和终点。第二个点起可用 `arrivalMode` 表示“从上一点前往此点”的方式；未提供时使用 payload 的 `travelMode`。`externalUrl` 与 `imageUrl` 只接受 `http`/`https`。图片服务器需要允许跨域读取，否则浏览器可预览但 PNG 导出可能无法嵌入。若只传 `googlePlaceId`，TripCanvas 会生成标准 Google Maps Search 链接。
 
 ## Content script 示例
 

@@ -144,7 +144,8 @@ export function StylePanel() {
         : activeRoute.source === 'osrm'
           ? '真实路线'
           : '直线预览'
-    const travelModeLabel = TRAVEL_MODE_LABELS[activeRoute.travelMode]
+    const legModes = new Set(activeRoute.legs.map((leg) => leg.travelMode ?? activeRoute.travelMode))
+    const travelModeLabel = legModes.size > 1 ? '混合出行' : TRAVEL_MODE_LABELS[activeRoute.travelMode]
 
     return (
       <PanelSection title="路线样式" action={<span className="text-xs text-ink-muted">{routeSourceLabel}</span>}>
@@ -164,7 +165,7 @@ export function StylePanel() {
                     {index + 1}. {fromPlace?.name ?? '起点'} → {toPlace?.name ?? '终点'}
                   </span>
                   <span className="shrink-0 font-semibold text-coral-dark">
-                    {formatDuration(leg.durationSeconds)}
+                    {TRAVEL_MODE_LABELS[leg.travelMode ?? activeRoute.travelMode]} · {formatDuration(leg.durationSeconds)}
                   </span>
                 </div>
               )

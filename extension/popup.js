@@ -1,7 +1,7 @@
 const storageKey = 'tripcanvas-extension-project'
 const project = {
   title: '', subtitle: '', travelMode: 'walking', canvasRatio: '3:4', previewVisible: true,
-  places: [], routeGeometry: [], routeSummary: null,
+  places: [], routeGeometry: [], routeSegments: [], routeSummary: null,
 }
 
 const byId = (id) => document.getElementById(id)
@@ -34,6 +34,20 @@ async function getTripCanvasTab() {
   return tabs[0]
 }
 
+function normalizeArrivalModes() {
+  project.places.forEach((place, index) => {
+    if (index === 0) {
+      delete place.arrivalMode
+    } else if (!['walking', 'driving'].includes(place.arrivalMode)) {
+      place.arrivalMode = 'walking'
+    }
+  })
+}
+
+function getRouteModes() {
+  return project.places.slice(1).map((place) => place.arrivalMode ?? 'walking')
+}
+
 function createGoogleMapsRouteUrl() {
   const origin = project.places[0]
   const destination = project.places.at(-1)
@@ -43,12 +57,28 @@ function createGoogleMapsRouteUrl() {
   url.searchParams.set('api', '1')
   url.searchParams.set('origin', `${origin.lat},${origin.lng}`)
   url.searchParams.set('destination', `${destination.lat},${destination.lng}`)
-  url.searchParams.set('travelmode', project.travelMode)
+  const modes = getRouteModes()
+  url.searchParams.set('travelmode', modes[0] ?? 'walking')
   const waypoints = project.places.slice(1, -1)
   if (waypoints.length) {
     url.searchParams.set('waypoints', waypoints.map((place) => `${place.lat},${place.lng}`).join('|'))
   }
   return url.toString()
+}
+
+function createGoogleMapsFitUrl() {
+  if (!project.places.length) return null
+  const lats = project.places.map((place) => place.lat)
+  const lngs = project.places.map((place) => place.lng)
+  const minLat = Math.min(...lats)
+  const maxLat = Math.max(...lats)
+  const minLng = Math.min(...lngs)
+  const maxLng = Math.max(...lngs)
+  const centerLat = (minLat + maxLat) / 2
+  const centerLng = (minLng + maxLng) / 2
+  const span = Math.max(maxLat - minLat, (maxLng - minLng) * Math.cos(centerLat * Math.PI / 180), 0.001)
+  const zoom = Math.max(3, Math.min(17, Math.floor(Math.log2(180 / span)) - 1))
+  return `https://www.google.com/maps/@${centerLat},${centerLng},${zoom}z`
 }
 
 async function waitForTabComplete(tabId, timeoutMs = 12_000) {
@@ -71,7 +101,8 @@ async function waitForTabComplete(tabId, timeoutMs = 12_000) {
 }
 
 async function openGoogleMapsRoute() {
-  const routeUrl = createGoogleMapsRouteUrl()
+  const modes = new Set(getRouteModes())
+  const routeUrl = modes.size <= 1 ? createGoogleMapsRouteUrl() : createGoogleMapsFitUrl()
   if (!routeUrl) return false
   const mapTab = await getGoogleMapsTab()
   if (!mapTab?.id) return false
@@ -102,7 +133,9 @@ function renderCandidates(candidates) {
         googlePlaceId: candidate.id,
         note: '',
         imageUrl: '',
+        arrivalMode: 'walking',
       })
+      normalizeArrivalModes()
       invalidateRoutePreview()
       saveProject()
       renderPlaces()
@@ -148,6 +181,7 @@ async function syncPreview() {
       canvasRatio: project.canvasRatio,
       places: project.places.map(({ name, lat, lng }) => ({ name, lat, lng })),
       geometry: project.routeGeometry,
+      segments: project.routeSegments,
       routeSummary: project.routeSummary,
     },
   }).catch(() => undefined)
@@ -155,6 +189,7 @@ async function syncPreview() {
 
 function invalidateRoutePreview() {
   project.routeGeometry = []
+  project.routeSegments = []
   project.routeSummary = null
   renderRouteSummary()
 }
@@ -174,7 +209,7 @@ function renderRouteSummary() {
 
 function updatePlace(index, field, value) {
   project.places[index][field] = ['lat', 'lng'].includes(field) ? Number(value) : value
-  if (['lat', 'lng'].includes(field)) invalidateRoutePreview()
+  if (['lat', 'lng', 'arrivalMode'].includes(field)) invalidateRoutePreview()
   saveProject()
   void syncPreview()
 }
@@ -183,6 +218,7 @@ function movePlace(fromIndex, toIndex) {
   if (fromIndex === toIndex || toIndex < 0 || toIndex >= project.places.length) return
   const [place] = project.places.splice(fromIndex, 1)
   project.places.splice(toIndex, 0, place)
+  normalizeArrivalModes()
   invalidateRoutePreview()
   saveProject()
   renderPlaces()
@@ -196,13 +232,19 @@ function renderPlaces() {
   project.places.forEach((place, index) => {
     const item = document.createElement('li')
     item.dataset.index = String(index)
-    item.innerHTML = `<div class="stop-order"><button class="drag-handle" draggable="true" aria-label="拖拽调整 ${escapeHtml(place.name)} 的顺序" title="拖拽排序">⠿</button><span>${index + 1}</span></div><details><summary><strong>${escapeHtml(place.name)}</strong><small>展开编辑</small></summary><div class="place-body"><input data-field="name" value="${escapeHtml(place.name)}" aria-label="地点名称" placeholder="地点名称"/><div class="coords"><input data-field="lat" value="${place.lat}" aria-label="纬度" placeholder="纬度"/><input data-field="lng" value="${place.lng}" aria-label="经度" placeholder="经度"/></div><div class="place-details"><textarea data-field="note" aria-label="地点说明" placeholder="攻略、停留时间或拍照提示">${escapeHtml(place.note)}</textarea><input data-field="imageUrl" value="${escapeHtml(place.imageUrl)}" aria-label="地点图片链接" placeholder="图片 URL（用于副图）"/></div></div></details><div class="stop-actions"><button class="move-up" aria-label="上移 ${escapeHtml(place.name)}" title="上移" ${index === 0 ? 'disabled' : ''}>↑</button><button class="move-down" aria-label="下移 ${escapeHtml(place.name)}" title="下移" ${index === project.places.length - 1 ? 'disabled' : ''}>↓</button><button class="remove" aria-label="删除 ${escapeHtml(place.name)}" title="删除">×</button></div>`
-    item.querySelectorAll('input, textarea').forEach((input) => input.addEventListener('input', () => {
+    const arrivalEditor = index === 0
+      ? '<div class="arrival-mode start">路线起点</div>'
+      : `<label class="arrival-mode">前往此点<select data-field="arrivalMode" aria-label="前往 ${escapeHtml(place.name)} 的出行方式"><option value="walking" ${place.arrivalMode === 'walking' ? 'selected' : ''}>步行</option><option value="driving" ${place.arrivalMode === 'driving' ? 'selected' : ''}>驾车</option></select></label>`
+    const arrivalSummary = index === 0 ? '起点' : place.arrivalMode === 'driving' ? '驾车到达' : '步行到达'
+    item.innerHTML = `<div class="stop-order"><button class="drag-handle" draggable="true" aria-label="拖拽调整 ${escapeHtml(place.name)} 的顺序" title="拖拽排序">⠿</button><span>${index + 1}</span></div><details><summary><strong>${escapeHtml(place.name)}</strong><small>${arrivalSummary}</small></summary><div class="place-body">${arrivalEditor}<input data-field="name" value="${escapeHtml(place.name)}" aria-label="地点名称" placeholder="地点名称"/><div class="coords"><input data-field="lat" value="${place.lat}" aria-label="纬度" placeholder="纬度"/><input data-field="lng" value="${place.lng}" aria-label="经度" placeholder="经度"/></div><div class="place-details"><textarea data-field="note" aria-label="地点说明" placeholder="攻略、停留时间或拍照提示">${escapeHtml(place.note)}</textarea><input data-field="imageUrl" value="${escapeHtml(place.imageUrl)}" aria-label="地点图片链接" placeholder="图片 URL（用于副图）"/></div></div></details><div class="stop-actions"><button class="move-up" aria-label="上移 ${escapeHtml(place.name)}" title="上移" ${index === 0 ? 'disabled' : ''}>↑</button><button class="move-down" aria-label="下移 ${escapeHtml(place.name)}" title="下移" ${index === project.places.length - 1 ? 'disabled' : ''}>↓</button><button class="remove" aria-label="删除 ${escapeHtml(place.name)}" title="删除">×</button></div>`
+    item.querySelectorAll('input, textarea, select').forEach((input) => input.addEventListener('input', () => {
       updatePlace(index, input.dataset.field, input.value)
       if (input.dataset.field === 'name') item.querySelector('summary strong').textContent = input.value || '未命名地点'
+      if (input.dataset.field === 'arrivalMode') item.querySelector('summary small').textContent = input.value === 'driving' ? '驾车到达' : '步行到达'
     }))
     item.querySelector('.remove').addEventListener('click', () => {
       project.places.splice(index, 1)
+      normalizeArrivalModes()
       invalidateRoutePreview()
       saveProject()
       renderPlaces()
@@ -253,6 +295,8 @@ byId('capture').addEventListener('click', async () => {
   const response = await chrome.tabs.sendMessage(tab.id, { type: 'TRIPCANVAS_CAPTURE_GOOGLE_PLACE' }).catch(() => null)
   if (!response?.place) { setStatus(response?.error ?? '无法捕获该地点，请刷新 Google Maps 后重试。', true); return }
   project.places.push({ ...response.place, note: '', imageUrl: '' })
+  project.places.at(-1).arrivalMode = 'walking'
+  normalizeArrivalModes()
   invalidateRoutePreview()
   saveProject(); renderPlaces(); await syncPreview(); setStatus(`已加入「${response.place.name}」。`)
 })
@@ -276,8 +320,8 @@ byId('update-route-preview').addEventListener('click', async () => {
   button.textContent = '正在计算路线…'
   const response = await chrome.tabs.sendMessage(target.id, {
     type: 'TRIPCANVAS_CALCULATE_PREVIEW_ROUTE',
-    travelMode: project.travelMode,
-    places: project.places.map(({ name, lat, lng }) => ({ name, lat, lng })),
+    travelMode: getRouteModes()[0] ?? 'walking',
+    places: project.places.map(({ name, lat, lng, arrivalMode }) => ({ name, lat, lng, arrivalMode })),
   }).catch(() => null)
   button.disabled = false
   button.textContent = '更新真实路线预览'
@@ -287,6 +331,7 @@ byId('update-route-preview').addEventListener('click', async () => {
     return
   }
   project.routeGeometry = response.geometry
+  project.routeSegments = response.segments ?? []
   project.routeSummary = {
     distanceMeters: response.distanceMeters ?? 0,
     durationSeconds: response.durationSeconds ?? 0,
@@ -325,7 +370,7 @@ byId('send').addEventListener('click', async () => {
     title: project.title.trim() || undefined,
     subtitle: project.subtitle.trim() || undefined,
     canvasRatio: project.canvasRatio,
-    travelMode: project.travelMode,
+    travelMode: getRouteModes()[0] ?? 'walking',
     places: project.places.map((place) => ({
       ...place,
       imageUrl: place.imageUrl?.trim() || undefined,
@@ -341,7 +386,8 @@ chrome.storage.local.get({ [storageKey]: null }, (result) => {
   Object.assign(project, result[storageKey] ?? {})
   project.places = Array.isArray(project.places) ? project.places : []
   project.routeGeometry = Array.isArray(project.routeGeometry) ? project.routeGeometry : []
-  bindProjectField('travel-mode', 'travelMode')
+  project.routeSegments = Array.isArray(project.routeSegments) ? project.routeSegments : []
+  normalizeArrivalModes()
   byId('toggle-preview').textContent = project.previewVisible ? '隐藏地图预览框' : '显示地图预览框'
   renderPlaces()
   renderRouteSummary()

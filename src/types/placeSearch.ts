@@ -24,7 +24,7 @@ export interface ExtensionRoutePreviewRequest {
   type: 'TRIPCANVAS_EXTENSION_CALCULATE_ROUTE'
   requestId: string
   travelMode: 'walking' | 'driving'
-  places: Array<{ name: string; lat: number; lng: number }>
+  places: Array<{ name: string; lat: number; lng: number; arrivalMode?: 'walking' | 'driving' }>
 }
 
 export interface ExtensionRoutePreviewResult {
@@ -34,5 +34,9 @@ export interface ExtensionRoutePreviewResult {
   distanceMeters?: number
   durationSeconds?: number
   warning?: string
+  segments?: Array<{
+    travelMode: 'walking' | 'driving'
+    geometry: Array<{ lat: number; lng: number }>
+  }>
   error?: string
 }

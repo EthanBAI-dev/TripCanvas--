@@ -10,6 +10,7 @@ export interface RouteLeg {
   geometry: LngLat[]
   distanceMeters: number
   durationSeconds: number
+  travelMode?: Extract<TravelMode, 'walking' | 'driving'>
 }
 
 export interface RouteStyle {

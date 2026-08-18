@@ -3,7 +3,7 @@ import { searchGooglePlaces } from '../../services/google/searchGooglePlaces.ts'
 import { useProjectStore } from '../../store/projectStore.ts'
 import type { ExtensionPlaceSearchRequest, ExtensionPlaceSearchResult } from '../../types/placeSearch.ts'
 import type { ExtensionRoutePreviewRequest, ExtensionRoutePreviewResult } from '../../types/placeSearch.ts'
-import { calculateRoute } from '../../services/routing/calculateRoute.ts'
+import { calculateMixedRoute } from '../../services/routing/calculateMixedRoute.ts'
 import type { Place } from '../../types/place.ts'
 
 function isSearchRequest(value: unknown): value is ExtensionPlaceSearchRequest {
@@ -29,7 +29,8 @@ function isRouteRequest(value: unknown): value is ExtensionRoutePreviewRequest {
       typeof place?.name === 'string'
       && place.name.trim().length > 0
       && Number.isFinite(place.lat)
-      && Number.isFinite(place.lng),
+      && Number.isFinite(place.lng)
+      && (place.arrivalMode === undefined || place.arrivalMode === 'walking' || place.arrivalMode === 'driving'),
     )
 }
 
@@ -41,6 +42,7 @@ function toPreviewPlaces(request: ExtensionRoutePreviewRequest): Place[] {
     lng: place.lng,
     category: index === 0 ? 'start' : index === request.places.length - 1 ? 'end' : 'custom',
     source: 'google',
+    arrivalMode: place.arrivalMode,
   }))
 }
 
@@ -51,7 +53,7 @@ export function ExtensionBridge() {
 
       if (isRouteRequest(event.data)) {
         const request = event.data
-        void calculateRoute(toPreviewPlaces(request), request.travelMode)
+        void calculateMixedRoute(toPreviewPlaces(request), request.travelMode)
           .then(({ route, warning }) => {
             const result: ExtensionRoutePreviewResult = {
               type: 'TRIPCANVAS_EXTENSION_ROUTE_RESULT',
@@ -59,6 +61,10 @@ export function ExtensionBridge() {
               geometry: route?.geometry,
               distanceMeters: route?.distanceMeters,
               durationSeconds: route?.durationSeconds,
+              segments: route?.legs.map((leg) => ({
+                travelMode: leg.travelMode ?? request.travelMode,
+                geometry: leg.geometry,
+              })),
               warning,
             }
             window.postMessage(result, window.location.origin)

@@ -78,18 +78,25 @@ function renderRoutePath(frame, payload) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.setAttribute('viewBox', `0 0 ${frameRect.width} ${frameRect.height}`)
   Object.assign(svg.style, { inset: '0', position: 'absolute', zIndex: '1' })
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-  path.setAttribute('d', payload.geometry.map((point, index) => {
-    const projected = projectPoint(point)
-    return `${index === 0 ? 'M' : 'L'}${projected.x.toFixed(1)},${projected.y.toFixed(1)}`
-  }).join(' '))
-  path.setAttribute('fill', 'none')
-  path.setAttribute('stroke', '#0284c7')
-  path.setAttribute('stroke-linecap', 'round')
-  path.setAttribute('stroke-linejoin', 'round')
-  path.setAttribute('stroke-width', '6')
-  path.setAttribute('style', 'filter:drop-shadow(0 2px 2px rgba(255,255,255,.9))')
-  svg.append(path)
+  const segments = Array.isArray(payload.segments) && payload.segments.length
+    ? payload.segments
+    : [{ travelMode: 'walking', geometry: payload.geometry }]
+  segments.forEach((segment) => {
+    if (!Array.isArray(segment.geometry) || segment.geometry.length < 2) return
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('d', segment.geometry.map((point, index) => {
+      const projected = projectPoint(point)
+      return `${index === 0 ? 'M' : 'L'}${projected.x.toFixed(1)},${projected.y.toFixed(1)}`
+    }).join(' '))
+    path.setAttribute('fill', 'none')
+    path.setAttribute('stroke', segment.travelMode === 'driving' ? '#0f766e' : '#0284c7')
+    path.setAttribute('stroke-dasharray', segment.travelMode === 'driving' ? '0' : '10 5')
+    path.setAttribute('stroke-linecap', 'round')
+    path.setAttribute('stroke-linejoin', 'round')
+    path.setAttribute('stroke-width', '6')
+    path.setAttribute('style', 'filter:drop-shadow(0 2px 2px rgba(255,255,255,.9))')
+    svg.append(path)
+  })
 
   payload.places.forEach((place, index) => {
     if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng)) return
