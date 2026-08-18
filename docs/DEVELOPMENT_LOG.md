@@ -477,3 +477,22 @@
 **待验证**
 
 - 当前 Google Key 需要额外启用并允许 Places API（New），完成后再验证真实候选响应。
+
+---
+
+## 2026-08-18 — 折叠路径点与真实路线构图预览
+
+**完成**
+
+- Side Panel 路径点卡片改为默认折叠，折叠态仅显示编号、名称和必要操作；展开后编辑名称、坐标、说明与图片。
+- 新增手动“更新真实路线预览”按钮，避免编辑过程中频繁产生 Routes API 请求；地点坐标、顺序或出行方式改变后会标记预览待更新。
+- Web App 扩展桥接复用现有 `calculateRoute`，返回 geometry、距离、时间及回退警告。
+- Google Maps 内容脚本使用 Web Mercator 将路线 geometry 和编号点投影到 3:4、4:5、9:16 画幅框，并在地图拖动或缩放导致 URL 相机参数变化时自动重绘。
+
+**验证**
+
+- 扩展脚本通过 Node 语法检查，TypeScript 与生产构建通过。
+
+**风险**
+
+- 预览投影依赖 Google Maps URL 的 `@lat,lng,zoom` 相机参数；Google 调整 URL 格式时需更新解析器。高清导出仍由 Web App 的官方 Maps/Routes/Static Maps 链路完成。

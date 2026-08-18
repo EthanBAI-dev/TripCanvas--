@@ -1,6 +1,7 @@
 const storageKey = 'tripcanvas-extension-project'
 const project = {
-  title: '', subtitle: '', travelMode: 'walking', canvasRatio: '3:4', previewVisible: true, places: [],
+  title: '', subtitle: '', travelMode: 'walking', canvasRatio: '3:4', previewVisible: true,
+  places: [], routeGeometry: [], routeSummary: null,
 }
 
 const byId = (id) => document.getElementById(id)
@@ -55,6 +56,7 @@ function renderCandidates(candidates) {
         note: '',
         imageUrl: '',
       })
+      invalidateRoutePreview()
       saveProject()
       renderPlaces()
       void syncPreview()
@@ -97,13 +99,35 @@ async function syncPreview() {
       title: project.title || '我的旅行路线',
       subtitle: project.subtitle,
       canvasRatio: project.canvasRatio,
-      places: project.places.map(({ name }) => ({ name })),
+      places: project.places.map(({ name, lat, lng }) => ({ name, lat, lng })),
+      geometry: project.routeGeometry,
+      routeSummary: project.routeSummary,
     },
   }).catch(() => undefined)
 }
 
+function invalidateRoutePreview() {
+  project.routeGeometry = []
+  project.routeSummary = null
+  renderRouteSummary()
+}
+
+function renderRouteSummary() {
+  const element = byId('route-summary')
+  if (!project.routeSummary) {
+    element.textContent = project.places.length >= 2 ? '路径点已变化，请更新真实路线预览。' : '添加两个路径点后可计算路线。'
+    return
+  }
+  const distance = project.routeSummary.distanceMeters >= 1000
+    ? `${(project.routeSummary.distanceMeters / 1000).toFixed(1)} km`
+    : `${project.routeSummary.distanceMeters} m`
+  const minutes = Math.max(1, Math.round(project.routeSummary.durationSeconds / 60))
+  element.textContent = `${distance} · 约 ${minutes} 分钟${project.routeSummary.warning ? ' · 当前为回退预览' : ''}`
+}
+
 function updatePlace(index, field, value) {
   project.places[index][field] = ['lat', 'lng'].includes(field) ? Number(value) : value
+  if (['lat', 'lng'].includes(field)) invalidateRoutePreview()
   saveProject()
   void syncPreview()
 }
@@ -112,6 +136,7 @@ function movePlace(fromIndex, toIndex) {
   if (fromIndex === toIndex || toIndex < 0 || toIndex >= project.places.length) return
   const [place] = project.places.splice(fromIndex, 1)
   project.places.splice(toIndex, 0, place)
+  invalidateRoutePreview()
   saveProject()
   renderPlaces()
   void syncPreview()
@@ -124,12 +149,14 @@ function renderPlaces() {
   project.places.forEach((place, index) => {
     const item = document.createElement('li')
     item.dataset.index = String(index)
-    item.innerHTML = `<div class="stop-order"><button class="drag-handle" draggable="true" aria-label="拖拽调整 ${escapeHtml(place.name)} 的顺序" title="拖拽排序">⠿</button><span>${index + 1}</span></div><div><input data-field="name" value="${escapeHtml(place.name)}" aria-label="地点名称" placeholder="地点名称"/><div class="coords"><input data-field="lat" value="${place.lat}" aria-label="纬度" placeholder="纬度"/><input data-field="lng" value="${place.lng}" aria-label="经度" placeholder="经度"/></div><div class="place-details"><textarea data-field="note" aria-label="地点说明" placeholder="攻略、停留时间或拍照提示">${escapeHtml(place.note)}</textarea><input data-field="imageUrl" value="${escapeHtml(place.imageUrl)}" aria-label="地点图片链接" placeholder="图片 URL（用于副图）"/></div></div><div class="stop-actions"><button class="move-up" aria-label="上移 ${escapeHtml(place.name)}" title="上移" ${index === 0 ? 'disabled' : ''}>↑</button><button class="move-down" aria-label="下移 ${escapeHtml(place.name)}" title="下移" ${index === project.places.length - 1 ? 'disabled' : ''}>↓</button><button class="remove" aria-label="删除 ${escapeHtml(place.name)}" title="删除">×</button></div>`
+    item.innerHTML = `<div class="stop-order"><button class="drag-handle" draggable="true" aria-label="拖拽调整 ${escapeHtml(place.name)} 的顺序" title="拖拽排序">⠿</button><span>${index + 1}</span></div><details><summary><strong>${escapeHtml(place.name)}</strong><small>展开编辑</small></summary><div class="place-body"><input data-field="name" value="${escapeHtml(place.name)}" aria-label="地点名称" placeholder="地点名称"/><div class="coords"><input data-field="lat" value="${place.lat}" aria-label="纬度" placeholder="纬度"/><input data-field="lng" value="${place.lng}" aria-label="经度" placeholder="经度"/></div><div class="place-details"><textarea data-field="note" aria-label="地点说明" placeholder="攻略、停留时间或拍照提示">${escapeHtml(place.note)}</textarea><input data-field="imageUrl" value="${escapeHtml(place.imageUrl)}" aria-label="地点图片链接" placeholder="图片 URL（用于副图）"/></div></div></details><div class="stop-actions"><button class="move-up" aria-label="上移 ${escapeHtml(place.name)}" title="上移" ${index === 0 ? 'disabled' : ''}>↑</button><button class="move-down" aria-label="下移 ${escapeHtml(place.name)}" title="下移" ${index === project.places.length - 1 ? 'disabled' : ''}>↓</button><button class="remove" aria-label="删除 ${escapeHtml(place.name)}" title="删除">×</button></div>`
     item.querySelectorAll('input, textarea').forEach((input) => input.addEventListener('input', () => {
       updatePlace(index, input.dataset.field, input.value)
+      if (input.dataset.field === 'name') item.querySelector('summary strong').textContent = input.value || '未命名地点'
     }))
     item.querySelector('.remove').addEventListener('click', () => {
       project.places.splice(index, 1)
+      invalidateRoutePreview()
       saveProject()
       renderPlaces()
       void syncPreview()
@@ -167,6 +194,7 @@ function bindProjectField(id, field) {
   element.value = project[field]
   element.addEventListener('input', () => {
     project[field] = element.value
+    if (field === 'travelMode') invalidateRoutePreview()
     saveProject()
     void syncPreview()
   })
@@ -178,6 +206,7 @@ byId('capture').addEventListener('click', async () => {
   const response = await chrome.tabs.sendMessage(tab.id, { type: 'TRIPCANVAS_CAPTURE_GOOGLE_PLACE' }).catch(() => null)
   if (!response?.place) { setStatus(response?.error ?? '无法捕获该地点，请刷新 Google Maps 后重试。', true); return }
   project.places.push({ ...response.place, note: '', imageUrl: '' })
+  invalidateRoutePreview()
   saveProject(); renderPlaces(); await syncPreview(); setStatus(`已加入「${response.place.name}」。`)
 })
 
@@ -187,7 +216,39 @@ byId('place-query').addEventListener('keydown', (event) => {
 })
 
 byId('clear').addEventListener('click', () => {
-  project.places = []; saveProject(); renderPlaces(); void syncPreview(); setStatus('已清空路径点。')
+  project.places = []; invalidateRoutePreview(); saveProject(); renderPlaces(); void syncPreview(); setStatus('已清空路径点。')
+})
+
+byId('update-route-preview').addEventListener('click', async () => {
+  if (project.places.length < 2) { setStatus('请至少添加 2 个路径点。', true); return }
+  const target = await getTripCanvasTab()
+  if (!target?.id) { setStatus('请先打开 TripCanvas（127.0.0.1:5174）。', true); return }
+
+  const button = byId('update-route-preview')
+  button.disabled = true
+  button.textContent = '正在计算路线…'
+  const response = await chrome.tabs.sendMessage(target.id, {
+    type: 'TRIPCANVAS_CALCULATE_PREVIEW_ROUTE',
+    travelMode: project.travelMode,
+    places: project.places.map(({ name, lat, lng }) => ({ name, lat, lng })),
+  }).catch(() => null)
+  button.disabled = false
+  button.textContent = '更新真实路线预览'
+
+  if (!response?.geometry?.length) {
+    setStatus(response?.error ?? '路线预览计算失败。', true)
+    return
+  }
+  project.routeGeometry = response.geometry
+  project.routeSummary = {
+    distanceMeters: response.distanceMeters ?? 0,
+    durationSeconds: response.durationSeconds ?? 0,
+    warning: response.warning,
+  }
+  saveProject()
+  renderRouteSummary()
+  await syncPreview()
+  setStatus(response.warning ? `路线已更新。${response.warning}` : '真实路线已显示在地图预览框中。')
 })
 
 byId('toggle-preview').addEventListener('click', () => {
@@ -226,11 +287,13 @@ byId('send').addEventListener('click', async () => {
 chrome.storage.local.get({ [storageKey]: null }, (result) => {
   Object.assign(project, result[storageKey] ?? {})
   project.places = Array.isArray(project.places) ? project.places : []
+  project.routeGeometry = Array.isArray(project.routeGeometry) ? project.routeGeometry : []
   bindProjectField('title', 'title')
   bindProjectField('subtitle', 'subtitle')
   bindProjectField('travel-mode', 'travelMode')
   bindProjectField('canvas-ratio', 'canvasRatio')
   byId('toggle-preview').textContent = project.previewVisible ? '隐藏地图预览框' : '显示地图预览框'
   renderPlaces()
+  renderRouteSummary()
   void syncPreview()
 })

@@ -19,3 +19,20 @@ export interface ExtensionPlaceSearchResult {
   candidates?: PlaceSearchCandidate[]
   error?: string
 }
+
+export interface ExtensionRoutePreviewRequest {
+  type: 'TRIPCANVAS_EXTENSION_CALCULATE_ROUTE'
+  requestId: string
+  travelMode: 'walking' | 'driving'
+  places: Array<{ name: string; lat: number; lng: number }>
+}
+
+export interface ExtensionRoutePreviewResult {
+  type: 'TRIPCANVAS_EXTENSION_ROUTE_RESULT'
+  requestId: string
+  geometry?: Array<{ lat: number; lng: number }>
+  distanceMeters?: number
+  durationSeconds?: number
+  warning?: string
+  error?: string
+}

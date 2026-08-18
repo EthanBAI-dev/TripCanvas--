@@ -33,4 +33,34 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }, window.location.origin)
     return true
   }
+
+  if (message?.type === 'TRIPCANVAS_CALCULATE_PREVIEW_ROUTE') {
+    const requestId = crypto.randomUUID()
+    const timeoutId = window.setTimeout(() => {
+      window.removeEventListener('message', handleRouteResult)
+      sendResponse({ error: 'Google Routes 预览请求超时。' })
+    }, 20_000)
+
+    function handleRouteResult(event) {
+      if (
+        event.source !== window
+        || event.origin !== window.location.origin
+        || event.data?.type !== 'TRIPCANVAS_EXTENSION_ROUTE_RESULT'
+        || event.data?.requestId !== requestId
+      ) return
+
+      window.clearTimeout(timeoutId)
+      window.removeEventListener('message', handleRouteResult)
+      sendResponse(event.data)
+    }
+
+    window.addEventListener('message', handleRouteResult)
+    window.postMessage({
+      type: 'TRIPCANVAS_EXTENSION_CALCULATE_ROUTE',
+      requestId,
+      travelMode: message.travelMode,
+      places: message.places,
+    }, window.location.origin)
+    return true
+  }
 })

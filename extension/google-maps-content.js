@@ -25,8 +25,79 @@ function extractPlace() {
 }
 
 const previewId = 'tripcanvas-map-preview'
+let lastPreviewPayload = null
+let lastMapUrl = window.location.href
+
+function getMapCamera() {
+  const match = window.location.href.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)z/)
+  if (!match) return null
+  return { lat: Number(match[1]), lng: Number(match[2]), zoom: Number(match[3]) }
+}
+
+function toWorldPoint({ lat, lng }, zoom) {
+  const scale = 256 * 2 ** zoom
+  const sin = Math.sin(Math.max(-85.0511, Math.min(85.0511, lat)) * Math.PI / 180)
+  return {
+    x: (lng + 180) / 360 * scale,
+    y: (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale,
+  }
+}
+
+function renderRoutePath(frame, payload) {
+  const camera = getMapCamera()
+  if (!camera || !Array.isArray(payload.geometry) || payload.geometry.length < 2) return
+  const frameRect = frame.getBoundingClientRect()
+  const center = toWorldPoint(camera, camera.zoom)
+  const projectPoint = (point) => {
+    const world = toWorldPoint(point, camera.zoom)
+    return {
+      x: window.innerWidth / 2 + world.x - center.x - frameRect.left,
+      y: window.innerHeight / 2 + world.y - center.y - frameRect.top,
+    }
+  }
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', `0 0 ${frameRect.width} ${frameRect.height}`)
+  Object.assign(svg.style, { inset: '0', position: 'absolute', zIndex: '1' })
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', payload.geometry.map((point, index) => {
+    const projected = projectPoint(point)
+    return `${index === 0 ? 'M' : 'L'}${projected.x.toFixed(1)},${projected.y.toFixed(1)}`
+  }).join(' '))
+  path.setAttribute('fill', 'none')
+  path.setAttribute('stroke', '#0284c7')
+  path.setAttribute('stroke-linecap', 'round')
+  path.setAttribute('stroke-linejoin', 'round')
+  path.setAttribute('stroke-width', '6')
+  path.setAttribute('style', 'filter:drop-shadow(0 2px 2px rgba(255,255,255,.9))')
+  svg.append(path)
+
+  payload.places.forEach((place, index) => {
+    if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng)) return
+    const point = projectPoint(place)
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+    circle.setAttribute('cx', String(point.x))
+    circle.setAttribute('cy', String(point.y))
+    circle.setAttribute('r', '10')
+    circle.setAttribute('fill', '#fb7185')
+    circle.setAttribute('stroke', '#fff')
+    circle.setAttribute('stroke-width', '3')
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    label.setAttribute('x', String(point.x))
+    label.setAttribute('y', String(point.y + 3.5))
+    label.setAttribute('fill', '#fff')
+    label.setAttribute('font-family', 'system-ui, sans-serif')
+    label.setAttribute('font-size', '10')
+    label.setAttribute('font-weight', '700')
+    label.setAttribute('text-anchor', 'middle')
+    label.textContent = String(index + 1)
+    svg.append(circle, label)
+  })
+  frame.prepend(svg)
+}
 
 function renderPreview(payload) {
+  lastPreviewPayload = payload
   document.getElementById(previewId)?.remove()
   if (!payload?.visible) return
 
@@ -45,6 +116,7 @@ function renderPreview(payload) {
     justifyContent: 'space-between',
     left: '50%',
     maxHeight: '74vh',
+    overflow: 'hidden',
     pointerEvents: 'none',
     position: 'fixed',
     top: '50%',
@@ -59,6 +131,7 @@ function renderPreview(payload) {
     borderRadius: '14px 14px 12px 12px',
     margin: '12px',
     padding: '14px 16px',
+    zIndex: '2',
   })
   const title = document.createElement('strong')
   title.textContent = payload.title || '我的旅行路线'
@@ -77,7 +150,23 @@ function renderPreview(payload) {
     gap: '6px',
     margin: '12px',
     padding: '10px',
+    zIndex: '2',
   })
+  if (payload.routeSummary) {
+    const summary = document.createElement('strong')
+    const distance = payload.routeSummary.distanceMeters >= 1000
+      ? `${(payload.routeSummary.distanceMeters / 1000).toFixed(1)} km`
+      : `${payload.routeSummary.distanceMeters} m`
+    const minutes = Math.max(1, Math.round(payload.routeSummary.durationSeconds / 60))
+    summary.textContent = `${distance} · ${minutes} 分钟`
+    Object.assign(summary.style, {
+      color: '#0369a1',
+      flexBasis: '100%',
+      font: '700 11px/1.2 system-ui, sans-serif',
+      marginBottom: '2px',
+    })
+    stops.append(summary)
+  }
   payload.places.slice(0, 8).forEach((place, index) => {
     const chip = document.createElement('span')
     chip.textContent = `${index + 1} ${place.name}`
@@ -103,7 +192,14 @@ function renderPreview(payload) {
 
   frame.append(heading, stops)
   document.documentElement.append(frame)
+  window.requestAnimationFrame(() => renderRoutePath(frame, payload))
 }
+
+window.setInterval(() => {
+  if (window.location.href === lastMapUrl) return
+  lastMapUrl = window.location.href
+  if (lastPreviewPayload?.visible) renderPreview(lastPreviewPayload)
+}, 600)
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'TRIPCANVAS_CAPTURE_GOOGLE_PLACE') {
